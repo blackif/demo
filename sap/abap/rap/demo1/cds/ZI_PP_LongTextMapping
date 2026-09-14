@@ -1,0 +1,10 @@
+@EndUserText.label: 'LongTextMapping'
+@AccessControl.authorizationCheck: #NOT_REQUIRED
+@VDM.viewType: #BASIC
+
+define view entity ZI_PP_LongTextMapping
+  as select from aufk_text
+{
+  key aufnr  as ManufacturingOrder,
+      tdname as LongTextName
+}
