@@ -21,11 +21,10 @@ CLASS Z_PP_LONGTEXT_GET IMPLEMENTATION.
 
 
 METHOD if_sadl_exit_calc_element_read~calculate.
-  " 1. 取得用構造体の定義（CLUSTDをXSTRINGとして定義するのがポイント）
   TYPES: BEGIN OF ty_stxl_raw,
            tdname TYPE stxl-tdname,
            clustr TYPE stxl-clustr,
-           clustd TYPE xstring,    " LRAWからXSTRINGに変換して受け取る
+           clustd TYPE xstring,
          END OF ty_stxl_raw.
 
   DATA: lt_original_data TYPE STANDARD TABLE OF zc_pp_manufacturingorder,
@@ -38,7 +37,6 @@ METHOD if_sadl_exit_calc_element_read~calculate.
     RETURN.
   ENDIF.
 
-  " 3. ループ処理
   LOOP AT lt_original_data ASSIGNING FIELD-SYMBOL(<fs_data>).
     IF <fs_data>-Tdname IS INITIAL.
       CONTINUE.
@@ -64,7 +62,6 @@ METHOD if_sadl_exit_calc_element_read~calculate.
         OTHERS                  = 8.
     IF sy-subrc = 0.
       DATA(lv_tab) = cl_abap_char_utilities=>horizontal_tab.
-      " テキストの結合
       DATA(lv_merged_text) = REDUCE string(
         INIT str = ``
         FOR ls_line IN lt_lines
