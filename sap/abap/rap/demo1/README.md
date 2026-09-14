@@ -52,10 +52,21 @@ flowchart TD
     C --> I[ZI_PP_LongTextMapping]
     C --> J[I_StatusObjectStatusChange]
 
+    B --> K[Virtual Element: LongText]
+    K --> L[Z_PP_LONGTEXT_GET]
+    L --> M[IF_SADL_EXIT_CALC_ELEMENT_READ]
+    M --> N[get_calculation_info]
+    M --> O[calculate]
+    O --> P[READ_TEXT]
+    P --> Q[LongText]
+
     D --> R[Manufacturing Order Data]
     E --> S[System Status]
+    I --> T[Tdname]
     R --> U[Final Result]
     S --> U
+    T --> U
+    Q --> U
 
     U --> V[OData V4 Response]
 ```
