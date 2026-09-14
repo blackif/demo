@@ -93,7 +93,7 @@ demo1/
 │   ├── ZI_PP_ACMSystemStatus
 │   ├── ZI_PP_LongTextMapping
 │   └── ZI_PP_ManufacturingOrder
-├── scl/
+├── class/
 │   └── z_pp_longtext_get.abap
 └── README.md
 ```
