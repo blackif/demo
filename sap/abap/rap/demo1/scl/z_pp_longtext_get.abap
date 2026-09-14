@@ -21,14 +21,7 @@ CLASS Z_PP_LONGTEXT_GET IMPLEMENTATION.
 
 
 METHOD if_sadl_exit_calc_element_read~calculate.
-  TYPES: BEGIN OF ty_stxl_raw,
-           tdname TYPE stxl-tdname,
-           clustr TYPE stxl-clustr,
-           clustd TYPE xstring,
-         END OF ty_stxl_raw.
-
   DATA: lt_original_data TYPE STANDARD TABLE OF zc_pp_manufacturingorder,
-        lt_stxl_raw      TYPE STANDARD TABLE OF ty_stxl_raw,
         lt_lines         TYPE STANDARD TABLE OF tline.
 
   lt_original_data = CORRESPONDING #( it_original_data ).
