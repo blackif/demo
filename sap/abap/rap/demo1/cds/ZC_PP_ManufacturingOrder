@@ -1,5 +1,6 @@
 @AccessControl.authorizationCheck: #NOT_REQUIRED
 @EndUserText.label: 'Manufacturing Order'
+@VDM.viewType: #CONSUMPTION
 define root view entity ZC_PP_ManufacturingOrder
   provider contract transactional_query 
   as projection on ZI_PP_ManufacturingOrder
