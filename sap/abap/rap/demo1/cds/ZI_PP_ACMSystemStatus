@@ -1,0 +1,12 @@
+@EndUserText.label: 'OrderStatus'
+@AccessControl.authorizationCheck: #NOT_REQUIRED
+@VDM.viewType: #BASIC
+
+define view entity ZI_PP_ACMSystemStatus
+  as select from jest
+{
+  key objnr as ApplicationStatusObject,
+  key stat as StatusProfileName,
+      inact as ChangeDocumentStatusIsInactive,
+      chgnr as ChangeNumber
+}
