@@ -1,0 +1,2771 @@
+# demo1_基本設計書
+
+> Auto-generated from the Excel design document. The Markdown is structured for both human reading and AI retrieval; the appendix preserves source-cell traceability.
+
+```yaml
+source_excel: "demo1_基本設計書.xlsx"
+sheet_count: "11"
+interface_id: "インタフェース名称 | 出荷リスト情報IF | インタフェースID | IF039"
+source: "RISE S/4 HANA"
+target: "インタフェース名 | HPK_SD_SmartCat_039_01_S4HANA_to_SmartCat_OutboundDeliveryList"
+```
+
+## 1. Document Overview
+
+| Item | Value |
+|---|---|
+| Source Excel | `demo1_基本設計書.xlsx` |
+| Sheet count | 11 |
+| Interface ID | インタフェース名称 \| 出荷リスト情報IF \| インタフェースID \| IF039 / - / v1.03追加 |
+| Purpose / Overview | 業務要件概要 / インタフェース概要 / その他仕様 |
+| Source System | RISE S/4 HANA / 出荷伝票、受注伝票、品目マスタ、得意先品目 |
+| Target System | インタフェース名 \| HPK_SD_SmartCat_039_01_S4HANA_to_SmartCat_OutboundDeliveryList / 5 / 10 |
+
+> This section is automatically summarized from labeled Excel cells. The original cell data is retained in the appendix for traceability.
+
+## 2. Purpose
+
+- 業務要件概要  
+  - Source: `IF定義` row 30
+- インタフェース概要  
+  - Source: `IF定義` row 33
+- その他仕様  
+  - Source: `DB定義` row 2
+
+## 3. Architecture / Integration
+
+- RISE S/4 HANA  
+  - Source: `IF定義` row 5
+- 出荷伝票、受注伝票、品目マスタ、得意先品目  
+  - Source: `IF定義` row 6
+
+## 4. Data Selection Rules
+
+- 7 | 日中・夜間・差分・再実行の分岐条件作成 | その他プロセス処理 | 通常データまたは遅延データより下記の処理を行う
+差分処理
+①外部パラメータ：再実行用フラグが'X'の場合、差分処理をしないこと
+　・DSP履歴テーブルの出荷伝票番号と出荷明細番号より出荷伝票を取得する。
+
+②外部パラメータ：再実行用フラグが空白の場合、
+ ・夜間実行の場合、差分処理をしないこと
+(本日且つシステム時刻がAM:0:00~1:00は夜間判定、再実行の場合は考慮しません)
+　夜間実施フラグを"X"で設定する。
+　※ファイル名：夜間または日中の名前を決定する用
+
+③外部パラメータ：再実行用フラグが空白の場合、
+ ・昼実行の場合、差分処理を行う
+(本日且つシステム時刻がAM:1:00より大きいは昼判定、再実行の場合は考慮しません)
+　 Write Variableに保存した前回実行日時で実施する。
+　 条件：前回実行日付より大きい、または前回実行日付と同じ、 
+ 且つ前回実行時刻より大きいなど、対象データを取得する
+
+④外部パラメータ：再実行用フラグが空白の場合、
+ SAP　Datasphereから連携してきた情報より | DB定義(01)
+
+再実行用フラグ
+外部パラメータ定義(01) | 下記の分岐より通常データと遅延データをそれぞれ情報を取得する
+・通常の出荷リストデータ
+　積載日=システム日付
+・営業承認遅延の出荷リストデータ
+　登録日が昨日、且つ積載日が過去日付
+
+●再実行用フラグより分岐対応
+①再実行用フラグがが"X"の場合
+DSPテーブルにエラーデータを格納し、再実行フラグより再実行を行う
+②再実行用フラグが空白の場合、
+抽出条件よりDSPから対象データを取得する。  
+  - Source: `プロセス定義` row 15
+- v0.3mod  
+  - Source: `DB定義` row 8
+
+## 5. Execution / Schedule
+
+- No explicitly labeled information was detected.
+
+## 6. Output / File Rules
+
+- 出力ファイルへの項目マッピング  
+  - Source: `IF定義` row 102
+- DB定義(01)
+
+再実行用フラグ
+外部パラメータ定義(01)  
+  - Source: `プロセス定義` row 15
+- 8 | 出荷伝票情報及びキスト情報と名称の編集 | その他プロセス処理 | ■上記の条件より取得対象項目
+出荷伝票のヘッダ情報取得
+・出荷ポイント
+・伝票タイプ※出力ファイル項目用ではない、ソート用
+・出荷伝票番号
+・積載日
+・登録日※出力ファイル項目ではない、営業承認遅延判定用
+・出庫予定日
+・受注先
+・インコタームズ
+出荷伝票の明細情報の取得
+・出荷明細番号
+・品目コード
+・明細/品目の明細テキスト
+・出荷数量
+・参照伝票番号
+・参照明細番号
+・品目Grp1(該非-輸出令)
+・プラント※出力ファイル項目用ではない、ファイル出力事業部名称分岐用
+受注伝票情報
+・受注伝票タイプ
+・登録担当者
+・得意先参照
+・受注伝票発行者
+個人情報取得
+・姓と名の取得  
+  - Source: `プロセス定義` row 17
+- Groovy Script
+例：取得のデータおり伝票タイプの順は下記の場合
+無償材料支給が1~5番、海外発送依頼が6~10番、有償材料支給が11~20番、無償出荷が21~30番、標準出荷が31~40番で登録されていたとします。以下の通り出力していただきたいです。
+ファイルの出力の時、下記の順で対応すること。
+海外発送依頼/有償材料支給/無償材料支給の伝票タイプは最後の順になります。
+①31~40番 標準出荷
+②21~30番 無償出荷
+③1~10番 海外発送依頼
+④11~20番 有償材料支給
+⑤1~5番 無償材料支給  
+  - Source: `プロセス定義` row 20
+- エラーが発生した場合、Payloadを出力してエラーで処理を終了する。
+エラー発生時のメールでシステム管理者に通知する。
+※シート：IF定義の(4)エラーハンドリングをご参照  
+  - Source: `プロセス定義` row 29
+- その他プロセス処理  
+  - Source: `プロセス定義` row 31
+- (取得項目)
+出荷ポイント(IF_I_DeliveryDocument-SHIPPINGPOINT)
+出荷伝票タイプ(IF_I_DeliveryDocument-DELIVERYDOCUMENTTYPE)※※出力ファイル項目用ではない、ソート用
+品目コード(IF_I_DeliveryDocumentItem-MATERIAL)
+責任原価センタ（製造）(IF_I_Product-ZZ1_COSTC_MANUz2_PRD)
+製品DB型名(IF_I_Product-ZZ1_DB_Name_PRD_PRD)
+出庫予定日付(IF_I_DeliveryDocument-PLANNEDGOODSISSUEDATE)
+積載日付(IF_I_DeliveryDocument-LoadingDate)
+インコタームズ(IF_I_DeliveryDocument-IncotermsClassification)
+受注先(IF_I_DeliveryDocument-SOLDTOPARTY)
+得意先参照(IF_C_SalesDocumentItemDEX_1-PURCHASEORDERBYCUSTOMER)
+出荷伝票番号(IF_I_DeliveryDocumentItem-DELIVERYDOCUMENT)
+出荷明細番号(IF_I_DeliveryDocumentItem-DELIVERYDOCUMENTITEM)
+明細テキスト(IF_I_DeliveryDocumentItem-SALESDOCUMENTITEMTEXT)：社内型名
+出荷数量実績(IF_I_DeliveryDocumentItem-ACTUALDELIVERYQUANTITY)
+参照伝票番号(IF_I_DeliveryDocumentItem-REFERENCESDDOCUMENT(出荷明細の参照伝票番号))
+参照明細番号(IF_I_DeliveryDocumentItem-REFERENCESDDOCUMENTITEM(出荷明細の参照伝票明細番号)
+品目Grp1(該非-輸出令)(IF_I_DeliveryDocumentItem-ADDITIONALMATERIALGROUP1)
+登録担当者(IF_C_SalesDocumentItemDEX_1-ZZCreatedByUser)
+得意先が使用する品目コード(社外型名)(IF_ZI_XA_CustMatInfoRec-KNMTA_MATERIALDESCRBYCUSTOMER)
+取引先機能(IF_ZI_SD_SalesDocPartner-PARTNERFUNCTION)
+国/地域コード(IF_ZI_SD_SalesDocPartner-US_FRGNACCTTAXRCPNTCNTRY)
+得意先マスタの取引先の会社ID(IF_I_Customer-TRADINGPARTNER)
+検索語句1(IF_I_BusinessPartner-SEARCHTERM1)※出力項目用
+名称1(IF_ZI_XA_AddrOrgPostalAddr-AddresseeName1)
+名称2(IF_ZI_XA_AddrOrgPostalAddr-AddresseeName2)
+プラント(IF_I_DeliveryDocumentItem-PLANT)※出力ファイル項目用ではない、ファイル出力事業部名称分岐用
+受注ヘッダデータの伝票タイプ(IF_C_SalesDocumentItemDEX_1-SALESDOCUMENTTYPE)※テキスト取得用
+購買伝票ヘッダのグループ(IF_C_PurchaseOrderItemDEX-PURCHASINGGROUP)※テキスト取得用
+購買伝票ヘッダの伝票タイプ(IF_C_PurchaseOrderItemDEXt-PURCHASEORDERTYPE)※テキスト取得用
+社内名英字(IF_PerPersona-businessFirstNameAlt2)
+社内姓英字(IF_PerPersona-businessLastNameAlt2)
+・対象データがない場合、処理が正常終了する
+・対象データがある場合、後続処理へ行く  
+  - Source: `DB定義` row 5
+- 08 | その他 | 上記取得の出荷リスト情報の通常データまたは遅延データより下記の処理を行い、マッピング定義を参照し、出荷リスト情報を加工する。
+IF定義のプロセス内容も参照し、出力ファイルのデータを加工する。
+マッピング定義L列No.1(出荷場所)
+出荷ポイント(IF_I_DeliveryDocument-SHIPPINGPOINT)を出荷場所に設定する
+マッピング定義L列No.2(受注No.)
+　参照伝票番号(IF_I_DeliveryDocumentItem-REFERENCESDDOCUMENT)と参照明細番号(IF_I_DeliveryDocumentItem-REFERENCESDDOCUMENTITEM)をハイフンで繋げて受注番号に設定
+マッピング定義L列No.3(出荷No.) 
+　出荷伝票番号(IF_I_DeliveryDocumentItem-DELIVERYDOCUMENT)と出荷明細番号(IF_I_DeliveryDocumentItem-DELIVERYDOCUMENTITEM)をハイフンで繋げる
+マッピング定義L列No.4(受注方法) 
+ 販売伝票タイプテキスト(IF_I_SalesDocumentTypeText-SALESDOCUMENTTYPENAME)を受注方法に設定する。※在庫転送以外設定
+　 ※テキスト取得できない場合、エラーデータに格納する。次のデータへ処理へ行く
+　　「受注方法(販売伝票タイプテキスト)が取得できません。　出荷伝票番号:出荷伝票番号の値　明細番号:明細番号の値」
+マッピング定義L列No.4(受注方法)
+ 出荷タイプ「Z130」プラント間在庫転送場合、「Z134」無償材料支給の場合、IF_I_PurchasingDocumentTypeText-PURCHASINGDOCUMENTTYPENAME(購買伝票タイプテキスト)を設定する。
+　　 ※テキスト取得できない場合、エラーデータに格納する。次のデータへ処理へ行く
+　　「受注方法(購買伝票タイプテキスト)が取得できません。　出荷伝票番号:出荷伝票番号の値　明細番号:明細番号の値」
+マッピング定義L列No.5(受注先コード)
+ 受注先(IF_I_DeliveryDocument-SOLDTOPARTY) を受注先コードに設定する。※出荷タイプが在庫転送の場合、ブランクとする。
+現法の場合、略称を出力する。
+受注先会社名、ユーザ会社名、届出先会社名※現法略称を出力
+※(IF_ZI_SD_SalesDocPartner-PARTNERFUNCTION(取引先機能)= 出荷先「SH(WE)」 AND IF_ZI_SD_SalesDocPartner-US_FRGNACCTTAXRCPNTCNTRY(国/地域コード))がJP以外の場合、取引先の会社ID(IF_I_Customer-TRADINGPARTNER)が空白ではない場合、
+マッピング定義L列No.6(受注先会社名)
+・取引先機能(IF_ZI_SD_SalesDocPartner-PARTNERFUNCTION)が受注先「SP(AG)」 の場合、取引先の会社ID(IF_I_Customer-TRADINGPARTNER)の値がある場合、検索語句1(IF_I_BusinessPartner-SEARCHTERM1)の値を受注先会社名に設定する。
+　※取得できない場合、エラーデータに格納する。次のデータへ処理へ行く
+　　「受注先会社名が取得できません。出荷伝票番号:出荷伝票番号の値　明細番号:明細番号の値」  
+  - Source: `DB定義` row 12
+- ファイルパス  
+  - Source: `File定義` row 2
+- プロトコル  
+  - Source: `リスト` row 1
+
+## 7. Mapping / Transformation
+
+- 国内はシート「マッピング定義（国内）」を参照  
+  - Source: `IF定義` row 78
+- 海外はシート「マッピング定義（海外）」を参照  
+  - Source: `IF定義` row 79
+- 出力ファイルへの項目マッピング  
+  - Source: `IF定義` row 102
+- 出荷伝票ヘッダの仕向国がJPの場合、マッピング定義（国内）の項目マッピング通りに出力する。  
+  - Source: `IF定義` row 103
+- 出荷伝票ヘッダの仕向国がJP以外の場合、マッピング定義（海外）の項目マッピング通りに出力する。  
+  - Source: `IF定義` row 104
+- マッピング定義 受信側の項目名をヘッダとしてファイル1行目に出力する。  
+  - Source: `IF定義` row 157
+- エラーが発生した場合、Payloadを出力してエラーで処理を終了する。
+エラー発生時のメールでシステム管理者に通知する。
+※シート：IF定義の(4)エラーハンドリングをご参照  
+  - Source: `プロセス定義` row 7
+- DB定義(02)  
+  - Source: `プロセス定義` row 18
+- マッピング定義
+DB定義の08~10よりエラーメッセージ情報を参照  
+  - Source: `プロセス定義` row 28
+- 08 | その他 | 上記取得の出荷リスト情報の通常データまたは遅延データより下記の処理を行い、マッピング定義を参照し、出荷リスト情報を加工する。
+IF定義のプロセス内容も参照し、出力ファイルのデータを加工する。
+マッピング定義L列No.1(出荷場所)
+出荷ポイント(IF_I_DeliveryDocument-SHIPPINGPOINT)を出荷場所に設定する
+マッピング定義L列No.2(受注No.)
+　参照伝票番号(IF_I_DeliveryDocumentItem-REFERENCESDDOCUMENT)と参照明細番号(IF_I_DeliveryDocumentItem-REFERENCESDDOCUMENTITEM)をハイフンで繋げて受注番号に設定
+マッピング定義L列No.3(出荷No.) 
+　出荷伝票番号(IF_I_DeliveryDocumentItem-DELIVERYDOCUMENT)と出荷明細番号(IF_I_DeliveryDocumentItem-DELIVERYDOCUMENTITEM)をハイフンで繋げる
+マッピング定義L列No.4(受注方法) 
+ 販売伝票タイプテキスト(IF_I_SalesDocumentTypeText-SALESDOCUMENTTYPENAME)を受注方法に設定する。※在庫転送以外設定
+　 ※テキスト取得できない場合、エラーデータに格納する。次のデータへ処理へ行く
+　　「受注方法(販売伝票タイプテキスト)が取得できません。　出荷伝票番号:出荷伝票番号の値　明細番号:明細番号の値」
+マッピング定義L列No.4(受注方法)
+ 出荷タイプ「Z130」プラント間在庫転送場合、「Z134」無償材料支給の場合、IF_I_PurchasingDocumentTypeText-PURCHASINGDOCUMENTTYPENAME(購買伝票タイプテキスト)を設定する。
+　　 ※テキスト取得できない場合、エラーデータに格納する。次のデータへ処理へ行く
+　　「受注方法(購買伝票タイプテキスト)が取得できません。　出荷伝票番号:出荷伝票番号の値　明細番号:明細番号の値」
+マッピング定義L列No.5(受注先コード)
+ 受注先(IF_I_DeliveryDocument-SOLDTOPARTY) を受注先コードに設定する。※出荷タイプが在庫転送の場合、ブランクとする。
+現法の場合、略称を出力する。
+受注先会社名、ユーザ会社名、届出先会社名※現法略称を出力
+※(IF_ZI_SD_SalesDocPartner-PARTNERFUNCTION(取引先機能)= 出荷先「SH(WE)」 AND IF_ZI_SD_SalesDocPartner-US_FRGNACCTTAXRCPNTCNTRY(国/地域コード))がJP以外の場合、取引先の会社ID(IF_I_Customer-TRADINGPARTNER)が空白ではない場合、
+マッピング定義L列No.6(受注先会社名)
+・取引先機能(IF_ZI_SD_SalesDocPartner-PARTNERFUNCTION)が受注先「SP(AG)」 の場合、取引先の会社ID(IF_I_Customer-TRADINGPARTNER)の値がある場合、検索語句1(IF_I_BusinessPartner-SEARCHTERM1)の値を受注先会社名に設定する。
+　※取得できない場合、エラーデータに格納する。次のデータへ処理へ行く
+　　「受注先会社名が取得できません。出荷伝票番号:出荷伝票番号の値　明細番号:明細番号の値」  
+  - Source: `DB定義` row 12
+- 09 | その他 | マッピング定義L列No.7(ユーザ会社名)
+・取引先機能(IF_ZI_SD_SalesDocPartner-PARTNERFUNCTION)が計画集計対象「ZC」 の場合、検語句1(IF_I_BusinessPartner-SEARCHTERM1)の値をユーザ会社名に設定する。
+　※取得できない場合、エラーデータに格納する。次のデータへ処理へ行く
+　　「ユーザ会社名が取得できません。出荷伝票番号:出荷伝票番号の値　明細番号:明細番号の値」
+マッピング定義L列No.8(届出先会社名)
+　取引先機能(IF_ZI_SD_SalesDocPartner-PARTNERFUNCTION)が出荷先「SH(WE)」 の場合、且つ検索語句1(IF_I_BusinessPartner-SEARCHTERM1)の値を届出先会社名に設定する。
+※取得できない場合、エラーデータに格納する。次のデータへ処理へ行く
+　　「届出先会社名が取得できません。出荷伝票番号:出荷伝票番号の値　明細番号:明細番号の値」
+
+現法以外の場合
+※(IF_ZI_SD_SalesDocPartner-PARTNERFUNCTION(取引先機能)= 出荷先「SH(WE)」 AND IF_ZI_SD_SalesDocPartner-US_FRGNACCTTAXRCPNTCNTRY(国/地域コード))がJP以外の場合、取引先の会社ID(IF_I_Customer-TRADINGPARTNER)が空白の場合、
+マッピング定義L列No.6(受注先会社名)
+・取引先機能(IF_ZI_SD_SalesDocPartner-PARTNERFUNCTION)が受注先「SP(AG)」 の場合、
+ 受注先の名称1(IF_ZI_XA_AddrOrgPostalAddr-AddresseeName1)と名称2(IF_ZI_XA_AddrOrgPostalAddr-AddresseeName2)を結合してを受注先会社名に設定する。
+・マッピング定義L列No.7(ユーザ会社名)
+・取引先機能(IF_ZI_SD_SalesDocPartner-PARTNERFUNCTION)が計画集計対象「ZC」 の場合、
+　　計画集計対象の名称1(IF_ZI_XA_AddrOrgPostalAddr-AddresseeName1)と名称2(IF_ZI_XA_AddrOrgPostalAddr-AddresseeName2)を結合してユーザ会社名に設定する。
+　※取得できない場合、エラーデータに格納する。次のデータへ処理へ行く
+　　「ユーザ会社名が取得できません。出荷伝票番号:出荷伝票番号の値　明細番号:明細番号の値」
+マッピング定義L列No.8(届出先会社名)
+・取引先機能(IF_ZI_SD_SalesDocPartner-PARTNERFUNCTION)が出荷先「SH(WE)」 の場合、
+　出荷先の名称1(IF_ZI_XA_AddrOrgPostalAddr-AddresseeName1)と名称2(IF_ZI_XA_AddrOrgPostalAddr-AddresseeName2)を結合して届出先会社名に設定する。
+※取得できない場合、エラーデータに格納する。次のデータへ処理へ行く
+　　「届出先会社名が取得できません。出荷伝票番号:出荷伝票番号の値　明細番号:明細番号の値」
+
+マッピング定義L列No.9(インコタームズ)
+ インコタームズ(IF_I_DeliveryDocument-INCOTERMSCLASSIFICATION)
+マッピング定義L列No.10(得意先参照→注文番号)
+　得意先参照(IF_C_SalesDocumentItemDEX_1-PURCHASEORDERBYCUSTOMER)の値がある場合、注文番号に設定する。
+　※出荷タイプが在庫転送の場合、ブランクとする。
+マッピング定義L列No.11(責任原価センタ（製造））→経費コード)
+ 責任原価センタ（製造）(IF_I_Product-ZZ1_COSTC_MANUz2_PRD)を経費コードに設定する。
+マッピング定義L列No.12(明細テキスト→社内型名)
+　 明細テキスト(IF_I_DeliveryDocumentItem-SALESDOCUMENTITEMTEXT)を社内型名に設定する。
+※社内型名取得できない場合、エラーデータに格納する。次のデータへ処理へ行く
+　「社内型名が取得できません。　出荷伝票番号　明細番号出荷伝票番号:出荷伝票番号の値　明細番号:明細番号の値」  
+  - Source: `DB定義` row 13
+- 10 | その他 | マッピング義L列No.13(追加得意先品目コード→社外型名)
+　 得意先が使用する品目コード(社外型名)(IF_ZI_XA_CustMatInfoRec-KNMTA_MATERIALDESCRBYCUSTOMER)の値がある場合を社外型名に設定する。
+マッピング義L列No.13(製品DB型名→社外型名)
+　 得意先が使用する品目コードがない場合、製品DB型名(IF_I_Product-ZZ1_DB_NAME_PRD_PRD)を社外型名に設定する。
+マッピング義L列No.13(明細テキスト→社外型名)
+ 得意先が使用する品目コードと製品DB型名(IF_I_Product-ZZ1_DB_NAME_PRD_PRD)がない場合、
+　 明細テキスト(IF_I_DeliveryDocumentItem-SALESDOCUMENTITEMTEXT)を社外型名に設定する。
+※社外型名取得できない場合、エラーデータに格納する。次のデータへ処理へ行く
+　　「社外型名が取得できません。　出荷伝票番号:出荷伝票番号の値　明細番号:明細番号の値」
+マッピング義L列No.14(出荷数量→数量)
+ 出荷数量実績(IF_I_DeliveryDocumentItem-ACTUALDELIVERYQUANTITY)を数量に設定する。
+マッピング義L列No.15(品目Grp1→該非-輸出令)
+ 品目Grp1(該非-輸出令)テキスト(IF_I_DeliveryDocumentItem-ADDITIONALMATERIALGROUP1)
+マッピング義L列No.16(出庫予定日→出荷日)
+ 出庫予定日付(IF_I_DeliveryDocument-PLANNEDGOODSISSUEDATE)を出荷日に設定する。
+マッピング義L列No.17(ロングテキスト-出荷指図ヘッダ/テキスト→摘要欄)
+　ロングテキストの出荷指図ヘッダテキストと明細テキストを結合して摘要欄に設定する。
+マッピング義L列No.18(ロングテキスト-品目販売テキスト(規制関連情報)→規制関連情報)
+マッピング義L列No.19(姓と名→受注伝票発行者)※出荷タイプが在庫転送以外の場合
+　社内姓(IF_PerPersona-businessLastName)と社内名(IF_PerPersona-businessFirstName)を半角スペースで結合し、設定する。※DSP配置予定
+マッピング定義L列No.19(購買グループテキスト→受注伝票発行者) ※出荷タイプが在庫転送の場合
+ IF_I_PurchasingGroup-PURCHASINGGROUPNAME(購買グループテキスト)
+　※取得できない場合、エラーデータに格納する。次のデータへ処理へ行く
+　「購買グループテキストが取得できません。　出荷伝票番号:出荷伝票番号の値　明細番号:明細番号の値」  
+  - Source: `DB定義` row 14
+- SOAP  
+  - Source: `リスト` row 5
+- XML  
+  - Source: `リスト` row 6
+- トランザクションマッピング情報  
+  - Source: `①受信側記載要領` row 4
+- No  
+  - Source: `①受信側記載要領` row 5
+
+## 8. Error Handling
+
+- エラーが発生した場合、同一条件で出荷伝票を再度抽出する。  
+  - Source: `IF定義` row 43
+- テキストデータ取得エラーとする。エラーとなった場合、実行単位でエラーとする。  
+  - Source: `IF定義` row 108
+- 但し、エラーとなった場合でも、一度全処理を通し、発生したエラーメッセージ全てと共にエラーファイルとして出力する。  
+  - Source: `IF定義` row 109
+- (4)エラーハンドリング  
+  - Source: `IF定義` row 141
+- エラーとなったレコードは事業部単位で異なるファイルでエラーファイルとして格納する。  
+  - Source: `IF定義` row 142
+- チェックエラーとなった場合、実行単位でエラーとする。  
+  - Source: `IF定義` row 143
+- 再実行時にはエラーとなった伝票を指定できること。  
+  - Source: `IF定義` row 145
+- エラーが発生した場合、業務ユーザ宛にメール通知を出力する。  
+  - Source: `IF定義` row 146
+- 参照  
+  - Source: `プロセス定義` row 2
+- {
+"reprocessFlag": "X"
+}  
+  - Source: `プロセス定義` row 3
+- 2 | 外部パラメータ取得 | その他プロセス処理 | HTTPのリクエストから受け取った値をPropertyに格納する。
+・’Prop_Input_reprocessFlag’：再実行用フラグ
+・条件用固定値の取得
+・ファイルパスの取得 | ※エラーが発生した場合、Payloadを出力してエラーで処理を終了する。
+※エラーレスポンスをする。
+"status": "ERROR",
+"message": "システムエラー",
+"ResponseCode"："500"  
+  - Source: `プロセス定義` row 4
+- その他プロセス処理  
+  - Source: `プロセス定義` row 6
+- Local Integration process  
+  - Source: `プロセス定義` row 7
+- 積み残し対応：DSPのアドオンテーブルから取得のように仕様変更対応  
+  - Source: `プロセス定義` row 9
+- 5 | 前回タイムスタンプ取得 | その他プロセス処理 | 前回実行日時を取得するProp_LastRunTimestamp＝Lvari_LastRunTimestamp(前回実行日時)
+
+出荷伝票情報取得処理へ続行 | エラーが発生した場合、Payloadを出力してエラーで処理を終了する。
+エラー発生時のメールでシステム管理者に通知する。  
+  - Source: `プロセス定義` row 10
+- ReceiverAdapter  
+  - Source: `プロセス定義` row 12
+- 7 | 日中・夜間・差分・再実行の分岐条件作成 | その他プロセス処理 | 通常データまたは遅延データより下記の処理を行う
+差分処理
+①外部パラメータ：再実行用フラグが'X'の場合、差分処理をしないこと
+　・DSP履歴テーブルの出荷伝票番号と出荷明細番号より出荷伝票を取得する。
+
+②外部パラメータ：再実行用フラグが空白の場合、
+ ・夜間実行の場合、差分処理をしないこと
+(本日且つシステム時刻がAM:0:00~1:00は夜間判定、再実行の場合は考慮しません)
+　夜間実施フラグを"X"で設定する。
+　※ファイル名：夜間または日中の名前を決定する用
+
+③外部パラメータ：再実行用フラグが空白の場合、
+ ・昼実行の場合、差分処理を行う
+(本日且つシステム時刻がAM:1:00より大きいは昼判定、再実行の場合は考慮しません)
+　 Write Variableに保存した前回実行日時で実施する。
+　 条件：前回実行日付より大きい、または前回実行日付と同じ、 
+ 且つ前回実行時刻より大きいなど、対象データを取得する
+
+④外部パラメータ：再実行用フラグが空白の場合、
+ SAP　Datasphereから連携してきた情報より | DB定義(01)
+
+再実行用フラグ
+外部パラメータ定義(01) | 下記の分岐より通常データと遅延データをそれぞれ情報を取得する
+・通常の出荷リストデータ
+　積載日=システム日付
+・営業承認遅延の出荷リストデータ
+　登録日が昨日、且つ積載日が過去日付
+
+●再実行用フラグより分岐対応
+①再実行用フラグがが"X"の場合
+DSPテーブルにエラーデータを格納し、再実行フラグより再実行を行う
+②再実行用フラグが空白の場合、
+抽出条件よりDSPから対象データを取得する。  
+  - Source: `プロセス定義` row 15
+- エラー履歴テーブルイメージ  
+  - Source: `プロセス定義` row 22
+- Content Modifier  
+  - Source: `プロセス定義` row 25
+- End Message  
+  - Source: `プロセス定義` row 26
+- マッピング定義
+DB定義の08~10よりエラーメッセージ情報を参照  
+  - Source: `プロセス定義` row 28
+- エラーが発生した場合、Payloadを出力してエラーで処理を終了する。
+エラー発生時のメールでシステム管理者に通知する。
+※シート：IF定義の(4)エラーハンドリングをご参照  
+  - Source: `プロセス定義` row 29
+- File定義  
+  - Source: `プロセス定義` row 30
+- XML To CSV Converter  
+  - Source: `プロセス定義` row 35
+- Groovy Script  
+  - Source: `プロセス定義` row 43
+- DSPの出荷カード情報IF_エラー履歴テーブルデータを取得する
+(抽出条件)
+なし、全件取得
+(取得項目)
+全項目
+※エラー履歴テーブルイメージ  
+  - Source: `DB定義` row 8
+- レコードを削除する。
+(削除条件)
+全件データ削除
+※エラー履歴テーブル仕様  
+  - Source: `DB定義` row 9
+- レコードを登録する。
+(登録項目)
+全項目
+※エラー履歴テーブル仕様  
+  - Source: `DB定義` row 10
+- 項目を更新する。
+(更新条件)
+出荷伝票 =エラー対象の出荷伝票
+出荷明細 = エラー対象の出荷明細
+データ区分 = エラー対象のデータ区分
+(変更項目)
+※エラー履歴テーブル仕様  
+  - Source: `DB定義` row 11
+- 08 | その他 | 上記取得の出荷リスト情報の通常データまたは遅延データより下記の処理を行い、マッピング定義を参照し、出荷リスト情報を加工する。
+IF定義のプロセス内容も参照し、出力ファイルのデータを加工する。
+マッピング定義L列No.1(出荷場所)
+出荷ポイント(IF_I_DeliveryDocument-SHIPPINGPOINT)を出荷場所に設定する
+マッピング定義L列No.2(受注No.)
+　参照伝票番号(IF_I_DeliveryDocumentItem-REFERENCESDDOCUMENT)と参照明細番号(IF_I_DeliveryDocumentItem-REFERENCESDDOCUMENTITEM)をハイフンで繋げて受注番号に設定
+マッピング定義L列No.3(出荷No.) 
+　出荷伝票番号(IF_I_DeliveryDocumentItem-DELIVERYDOCUMENT)と出荷明細番号(IF_I_DeliveryDocumentItem-DELIVERYDOCUMENTITEM)をハイフンで繋げる
+マッピング定義L列No.4(受注方法) 
+ 販売伝票タイプテキスト(IF_I_SalesDocumentTypeText-SALESDOCUMENTTYPENAME)を受注方法に設定する。※在庫転送以外設定
+　 ※テキスト取得できない場合、エラーデータに格納する。次のデータへ処理へ行く
+　　「受注方法(販売伝票タイプテキスト)が取得できません。　出荷伝票番号:出荷伝票番号の値　明細番号:明細番号の値」
+マッピング定義L列No.4(受注方法)
+ 出荷タイプ「Z130」プラント間在庫転送場合、「Z134」無償材料支給の場合、IF_I_PurchasingDocumentTypeText-PURCHASINGDOCUMENTTYPENAME(購買伝票タイプテキスト)を設定する。
+　　 ※テキスト取得できない場合、エラーデータに格納する。次のデータへ処理へ行く
+　　「受注方法(購買伝票タイプテキスト)が取得できません。　出荷伝票番号:出荷伝票番号の値　明細番号:明細番号の値」
+マッピング定義L列No.5(受注先コード)
+ 受注先(IF_I_DeliveryDocument-SOLDTOPARTY) を受注先コードに設定する。※出荷タイプが在庫転送の場合、ブランクとする。
+現法の場合、略称を出力する。
+受注先会社名、ユーザ会社名、届出先会社名※現法略称を出力
+※(IF_ZI_SD_SalesDocPartner-PARTNERFUNCTION(取引先機能)= 出荷先「SH(WE)」 AND IF_ZI_SD_SalesDocPartner-US_FRGNACCTTAXRCPNTCNTRY(国/地域コード))がJP以外の場合、取引先の会社ID(IF_I_Customer-TRADINGPARTNER)が空白ではない場合、
+マッピング定義L列No.6(受注先会社名)
+・取引先機能(IF_ZI_SD_SalesDocPartner-PARTNERFUNCTION)が受注先「SP(AG)」 の場合、取引先の会社ID(IF_I_Customer-TRADINGPARTNER)の値がある場合、検索語句1(IF_I_BusinessPartner-SEARCHTERM1)の値を受注先会社名に設定する。
+　※取得できない場合、エラーデータに格納する。次のデータへ処理へ行く
+　　「受注先会社名が取得できません。出荷伝票番号:出荷伝票番号の値　明細番号:明細番号の値」  
+  - Source: `DB定義` row 12
+
+## 9. Sheet Index
+
+| # | Sheet | Size | Category |
+|---:|---|---:|---|
+| 1 | IF定義 | 165 × 70 | overview |
+| 2 | マッピング定義（海外） | 56 × 81 | mapping |
+| 3 | プロセスフロー | 128 × 85 | other |
+| 4 | プロセス定義 | 52 × 10 | mapping |
+| 5 | DB定義 | 25 × 6 | mapping |
+| 6 | 外部パラメータ定義 | 22 × 6 | other |
+| 7 | File定義 | 26 × 8 | other |
+| 8 | エラー履歴テーブル仕様 | 15 × 5 | error |
+| 9 | リスト | 18 × 16 | mapping |
+| 10 | ①受信側記載要領 | 29 × 41 | mapping |
+| 11 | ②トランザクション定義書とのマッピング内容記載要領 | 29 × 41 | mapping |
+
+## 1. Business / Selection Details
+
+- No dedicated sheet detected.
+
+## 2. Mapping Details
+
+### マッピング定義（海外）
+
+- **Row 1:** 送信側 \| 受信側 \| 変換 \| 備考 \| SAPメモ<br>最終化前に削除
+- **Row 2:** No. \| マスタ/トランザクション<br>ファイル \| 構造<br>(タブ/カテゴリ) \| 項目名 \| 属性 \| API \| No. \| マスタ/トランザクション<br>ファイル \| 構造<br>(タブ/カテゴリ) \| 項目名 \| 属性 \| API \| 変換仕様 \| データサンプル
+- **Row 3:** 必須 \| 型 \| 長さ \| 小数 \| エンティティ/構造 \| 項目名 \| 必須 \| 型 \| 長さ \| 小数 \| エンティティ/構造 \| 項目名
+- **Row 4:** =ROW()-3 \| 出荷伝票 \| LIKP \| ヘッダ \| 出荷ポイント \| CHAR \| 4 \| ILEDELIVDOC(I_DeliveryDocument) \| SHIPPINGPOINT \| 1 \| 出荷リスト情報 \| 出荷場所 \| CHAR \| - \| - \| 1201
+- **Row 5:** =ROW()-3 \| 出荷伝票 \| LIPS \| 明細/先行データ/受注 \| 参照伝票番号 \| CHAR \| 10 \| ILEDELIVDOCITEM(I_DeliveryDocumentItem) \| REFERENCESDDOCUMENT \| 2 \| 出荷リスト情報 \| 受注No. \| CHAR \| - \| - \| 項目結合 \| 10000000-10 \| 参照伝票番号、ハイフン、明細番号を繋げる
+- **Row 6:** =ROW()-3 \| 出荷伝票 \| LIPS \| 明細/先行データ/受注 \| 参照明細番号 \| CHAR \| 6 \| ILEDELIVDOCITEM(I_DeliveryDocumentItem) \| REFERENCESDDOCUMENTITEM \| 出荷リスト情報 \| - \| -
+- **Row 7:** =ROW()-3 \| 出荷伝票 \| LIKP \| ヘッダ \| 出荷伝票番号 \| CHAR \| 10 \| ILEDELIVDOC(I_DeliveryDocument) \| DELIVERYDOCUMENT \| 3 \| 出荷リスト情報 \| 出荷No. \| CHAR \| - \| - \| 項目結合 \| 80001060-10 \| 出荷伝票番号、ハイフン、明細番号を繋げる
+- **Row 8:** =ROW()-3 \| 出荷伝票 \| LIPS \| 明細 \| 出荷明細番号 \| CHAR \| 6 \| ILEDELIVDOCITEM(I_DeliveryDocumentItem) \| DELIVERYDOCUMENTITEM \| 出荷リスト情報 \| - \| - \| 項目結合 \| 出荷伝票番号、ハイフン、明細番号を繋げる
+- **Row 9:** =ROW()-3 \| 受注伝票 \| TVAKT \| ヘッダ \| 伝票タイプテキスト \| CHAR \| 20 \| ISDSALESDOCTYPET(I_SalesDocumentTypeText) \| SALESDOCUMENTTYPENAME \| 4 \| 出荷リスト情報 \| 受注方法 \| - \| - \| 有 \| 標準受注 \| コード値ではなく、テキスト<br>出荷タイプが在庫転送以外の場合、当項目を出力する。
+- **Row 10:** =ROW()-3 \| 購買発注 \| T024 \| ヘッダ \| 伝票タイプテキスト \| CHAR \| 20 \| IMMPURGDOCTYPTXT(I_PurchasingDocumentTypeText) \| PURCHASINGDOCUMENTTYPENAME \| 出荷リスト情報 \| - \| - \| 有 \| プラント間在庫転送 \| コード値ではなく、テキスト<br>出荷タイプが在庫転送の場合、当項目を出力する。<br>※購買参照の出荷タイプ「Z130」在庫転送、「Z134」無償材料支給
+- **Row 11:** =ROW()-3 \| 出荷伝票 \| LIKP \| ヘッダ/パートナ/受注先 \| 受注先 \| CHAR \| 10 \| ILEDELIVDOC(I_DeliveryDocument) \| SOLDTOPARTY \| 5 \| 出荷リスト情報 \| 受注先コード \| CHAR \| - \| - \| 1000000001
+- **Row 12:** =ROW()-3 \| 出荷伝票 \| ADRC \| ヘッダ/パートナ/受注先 \| 名称1 \| CHAR \| 40 \| - \| - \| 6 \| 出荷リスト情報 \| 受注先会社名 \| CHAR \| - \| - \| 項目結合 \| HAMAMATSU CORPORATION \| 現法以外の場合、名称1,名称2を結合する。<br>現法の場合、略称とするため検索語句 1から取得する。
+- **Row 13:** =ROW()-3 \| 出荷伝票 \| ADRC \| ヘッダ/パートナ/受注先 \| 名称2 \| CHAR \| 40 \| - \| - \| 出荷リスト情報 \| - \| - \| 項目結合
+- **Row 14:** =ROW()-3 \| 得意先マスタ \| BUT000 \| 得意先（一般） \| 検索語句 1 \| CHAR \| 20 \| I_BusinessPartner \| SEARCHTERM1 \| 出荷リスト情報 \| - \| - \| 有 \| HC \| 現法の場合、略称とする際の取得元項目。
+- **Row 15:** =ROW()-3 \| 出荷伝票 \| ADRC \| ヘッダ/パートナ/計画集計対象 \| 名称1 \| CHAR \| 40 \| =-[7]表紙!A2 \| - \| 7 \| 出荷リスト情報 \| ユーザ会社名 \| CHAR \| - \| - \| 項目結合 \| HAMAMATSU CORPORATION \| 現法以外の場合、名称1,名称2を結合する。<br>現法の場合、略称とするため検索語句 1から取得する。
+- **Row 16:** =ROW()-3 \| 出荷伝票 \| ADRC \| ヘッダ/パートナ/計画集計対象 \| 名称2 \| CHAR \| 40 \| - \| - \| 出荷リスト情報 \| - \| - \| 項目結合
+- **Row 17:** =ROW()-3 \| 得意先マスタ \| BUT000 \| 得意先（一般） \| 検索語句 1 \| CHAR \| 20 \| I_BusinessPartner \| SEARCHTERM1 \| 出荷リスト情報 \| - \| - \| 有 \| HC \| 現法の場合、略称とする際の取得元項目。
+- **Row 18:** =ROW()-3 \| 出荷伝票 \| ADRC \| ヘッダ/パートナ/出荷先 \| 名称1 \| CHAR \| 40 \| - \| - \| 8 \| 出荷リスト情報 \| 届出先会社名 \| CHAR \| - \| - \| 項目結合 \| HAMAMATSU CORPORATION \| 現法以外の場合、名称1,名称2を結合する。<br>現法の場合、略称とするため検索語句 1から取得する。
+- **Row 19:** =ROW()-3 \| 出荷伝票 \| ADRC \| ヘッダ/パートナ/出荷先 \| 名称2 \| CHAR \| 40 \| - \| - \| 出荷リスト情報 \| - \| - \| 項目結合
+- **Row 20:** =ROW()-3 \| 得意先マスタ \| BUT000 \| 得意先（一般） \| 検索語句 1 \| CHAR \| 20 \| I_BusinessPartner \| SEARCHTERM1 \| 出荷リスト情報 \| - \| - \| 有 \| HC \| 現法の場合、略称とする際の取得元項目。
+- **Row 21:** =ROW()-3 \| 出荷伝票 \| 明細/シップメント/シップメント \| インコタームズ \| CHAR \| 3 \| ILEDELIVDOC(I_DeliveryDocument) \| IncotermsClassification \| 9 \| 出荷リスト情報 \| インコタームズ \| CHAR \| - \| - \| CIP
+- **Row 22:** =ROW()-3 \| 受注伝票 \| VBAP \| ヘッダ/発注データ/受注先 \| 得意先参照 \| CHAR \| 35 \| CSDSLSDOCITMDX1(C_SalesDocumentItemDEX_1) \| PURCHASEORDERBYCUSTOMER \| 10 \| 出荷リスト情報 \| 注文番号 \| CHAR \| - \| - \| 4512323644 \| 出荷タイプが在庫転送の場合、不要
+- **Row 23:** =ROW()-3 \| 品目マスタ \| MARA \| 基本データ \| 責任原価センタ（製造） \| CHAR \| 10 \| IPRODUCT(I_Product) \| ZZ1_COSTC_MANUz2_PRD \| 11 \| 出荷リスト情報 \| 経費コード \| CHAR \| - \| - \| 1000010000
+- **Row 24:** =ROW()-3 \| 出荷伝票 \| LIPS \| 明細/品目 \| 明細テキスト \| CHAR \| 40 \| ILEDELIVDOCITEM(I_DeliveryDocumentItem) \| DELIVERYDOCUMENTITEMTEXT \| 12 \| 出荷リスト情報 \| 社内型名 \| CHAR \| - \| - \| L9181-05/Ver01
+- **Row 25:** =ROW()-3 \| 得意先品目情報 \| KNMTA \| 得意先品目/追加得意先品目 \| 追加得意先品目コード \| CHAR \| 35 \| KNMT_KNMTA(新規CDS（Z*）) \| KNMTA_MATERIALBYCUSTOMER \| 13 \| 出荷リスト情報 \| 社外型名 \| 有 \| L9100 \| 追加得意先品目コードが無かった場合、製品DB型名を格納する。<br>製品DB型名が無かった場合、明細テキストを格納する。
+- **Row 26:** =ROW()-3 \| 品目マスタ \| MARA \| 拡張項目 \| 製品DB型名 \| CHAR \| IPRODUCT(I_Product) \| ZZ1_DB_Name_PRD_PRD \| 有
+- **Row 27:** =ROW()-3 \| 出荷伝票 \| LIPS \| 明細/品目 \| 明細テキスト \| CHAR \| 40 \| ILEDELIVDOCITEM(I_DeliveryDocumentItem) \| DELIVERYDOCUMENTITEMTEXT \| 有
+- **Row 28:** =ROW()-3 \| 出荷伝票 \| LIPS \| 明細/ピッキング \| 出荷数量 \| QUAN \| 13 \| ILEDELIVDOCITEM(I_DeliveryDocumentItem) \| ACTUALDELIVERYQUANTITY \| 14 \| 出荷リスト情報 \| 数量 \| QUAN \| - \| - \| 10.000
+- **Row 29:** =ROW()-3 \| 出荷伝票 \| TVM1T \| 明細 \| 品目Grp1 \| CHAR \| 20 \| ISDADDLMATLGRP1T(I_AdditionalMaterialGroup1Text) \| ADDITIONALMATERIALGROUP1NAME \| 15 \| 出荷リスト情報 \| 該非-輸出令 \| CHAR \| - \| - \| 有 \| 該当 \| コード値ではなく、テキスト
+- **Row 30:** =ROW()-3 \| 出荷伝票 \| LIKP \| ヘッダ/処理 \| 出庫予定日 \| DATS \| 8 \| ILEDELIVDOC(I_DeliveryDocument) \| PLANNEDGOODSISSUEDATE \| 16 \| 出荷リスト情報 \| 出荷日 \| CHAR \| - \| - \| 2025.06.17
+- **Row 31:** =ROW()-3 \| 出荷伝票 \| STXH \| ヘッダ/テキスト \| ロングテキスト-出荷指図 \| ZSDTLX_0001 \| TEXT \| 17 \| 出荷リスト情報 \| 摘要欄 \| CHAR \| - \| - \| INVOICE P/L作成 \| テキストIDはZ108、言語はJAの出荷指図(ヘッダ)データ \| 20260218 項目結合削除
+- **Row 32:** =ROW()-3 \| 出荷伝票 \| STXH \| 明細/テキスト \| ロングテキスト-出荷指図 \| ZSDTLX_0002 \| TEXT \| 出荷リスト情報 \| 摘要欄 \| CHAR \| - \| - \| 納品書同梱 \| テキストIDはZ202、言語はJAの出荷指図(明細)データ \| 20260218 項目結合削除
+- **Row 33:** =ROW()-3 \| 出荷伝票 \| STXH \| 明細/テキスト \| ロングテキスト-規制関連情報 \| ZSDTLX_0002 \| TEXT \| 18 \| 出荷リスト情報 \| 規制関連情報 \| CHAR \| - \| - \| HG MG <0.1 wt%<br>WEEE \| 但し、規制関連情報全てが出力される<br>※テキストIDはZ200、言語はID(インドネシア語)の規制関連情報データ
+- **Row 34:** =ROW()-3 \| 受注伝票 \| ADRP \| ヘッダ/受注管理 \| 姓 \| CHAR \| 12 \| PerPersonal(IF_PerPersona) \| businessLastName \| 19 \| 出荷リスト情報 \| 受注伝票発行者 \| CHAR \| - \| - \| 有 \| 草野 大輝 \| コード値ではなく、テキスト<br>出荷タイプが在庫転送以外の場合、当項目を出力する。<br>姓と名の間に半角スペースを入力し、項目結合する。
+- **Row 35:** =ROW()-3 \| 受注伝票 \| ADRP \| ヘッダ/受注管理 \| 名 \| CHAR \| 12 \| PerPersonal(IF_PerPersona) \| businessFirstName \| 有 \| コード値ではなく、テキスト<br>出荷タイプが在庫転送以外の場合、当項目を出力する。<br>姓と名の間に半角スペースを入力し、項目結合する。
+- **Row 36:** =ROW()-3 \| 在庫転送 \| T024 \| ヘッダ \| 購買グループテキスト \| CHAR \| 18 \| IMMPURCHGROUP(I_PURCHASINGGROUP) \| PURCHASINGGROUPNAME \| - \| - \| 有 \| 電子管（自動） \| コード値ではなく、テキスト<br>出荷タイプが在庫転送の場合、当項目を出力する。
+- **Row 38:** 以下チェックロジックおよび項目取得用
+- **Row 39:** =ROW()-34 \| 出荷伝票 \| LIPS \| 明細 \| 明細カテゴリ \| CHAR \| 9 \| ILEDELIVDOCITEM(I_DeliveryDocumentItem) \| DELIVERYDOCUMENTITEMCATEGORY \| - \| - \| 明細カテゴリが「BOM子」の場合、対象の出荷明細は処理対象外とする。<br>明細カテゴリが「非在庫品」の場合、品目グループを確認する。
+- **Row 40:** =ROW()-34 \| 出荷伝票 \| LIKP \| ヘッダ/管理 \| 出荷ブロック \| CHAR \| 9 \| ILEDELIVDOC(I_DeliveryDocument) \| DELIVERYBLOCKREASON \| - \| - \| 出荷審査完了済みの明細は処理対象外とする。
+- **Row 41:** =ROW()-34 \| 出荷伝票 \| LIPS \| 明細 \| 品目グループ \| CHAR \| 9 \| ILEDELIVDOCITEM(I_DeliveryDocumentItem) \| PRODUCTGROUP \| - \| - \| 「サービス品」または「移転価格」の場合、対象の出荷明細は処理対象外とする。
+- **Row 42:** =ROW()-34 \| 出荷伝票 \| VBPA \| 取引先機能 \| 国/地域 \| CHAR \| 3 \| ZI_SD_SalesDoctPartner \| US_FRGNACCTTAXRCPNTCNTRY \| 5 \| 出荷リスト情報 \| 受注先会社名 \| - \| - \| 有 \| HAMAMATSU CORPORATION \| 取引先コードに値があった場合、かつ出荷先の仕向国がJP以外だった場合、受注先・出荷先・計画集計対象の名称を検索語句 1から取得する。
+- **Row 43:** =ROW()-34 \| 得意先マスタ \| VBPA \| 得意先（一般）/制御データ \| 取引先コード \| CHAR \| 6 \| ZI_SD_SalesDoctPartner \| CUSTOMER \| 5 \| 出荷リスト情報 \| 受注先会社名 \| - \| - \| 有 \| HAMAMATSU CORPORATION \| 取引先コードに値があった場合、かつ出荷先の仕向国がJP以外だった場合、受注先・出荷先・計画集計対象の名称を検索語句 1から取得する。
+- **Row 44:** =ROW()-34 \| 出荷伝票 \| LIKP \| ヘッダ \| プラント \| CHAR \| 4 \| ILEDELIVDOC(I_DeliveryDocument) \| RECEIVINGPLANT \| - \| - \| 出荷ポイント毎にファイルを分けるために使用する。
+- **Row 45:** =ROW()-34 \| 出荷伝票 \| LIKP \| ヘッダ \| 伝票タイプ \| CHAR \| 4 \| ILEDELIVDOC(I_DeliveryDocument) \| DELIVERYDOCUMENTTYPE \| 3 \| 出荷リスト情報 \| 受注方法 \| - \| - \| 有 \| 標準受注 \| 在庫転送の場合、在庫転送以外の場合で出力項目を振り分けるために使用する。
+- **Row 46:** =ROW()-34 \| 受注伝票 \| VBAK \| ヘッダ \| 伝票タイプ \| CHAR \| 4 \| CSDSLSDOCITMDX1(C_SalesDocumentItemDEX_1) \| SALESDOCUMENTTYPE \| 3 \| 出荷リスト情報 \| 受注方法 \| - \| - \| 有 \| 標準受注 \| コード値ではなく、テキストを出力するため、参照伝票番号を基に受注伝票データを参照し、テキストを取得する。<br>出荷タイプが在庫転送以外の場合、当項目を出力する。
+- **Row 47:** =ROW()-34 \| 購買発注 \| EKKO \| ヘッダ \| 伝票タイプ \| CHAR \| 4 \| CMMPOITMDX(C_PURCHASEORDERITEMDEX) \| PURCHASEORDERTYPE \| 3 \| 出荷リスト情報 \| 受注方法 \| - \| - \| 有 \| プラント間在庫転送 \| コード値ではなく、テキストを取得するため、参照伝票番号を基に発注伝票データを参照し、テキストを取得する。<br>出荷タイプが在庫転送の場合、当項目を出力する。
+- **Row 48:** =ROW()-34 \| 出荷伝票 \| LIPS \| 明細 \| 品目Grp1 \| CHAR \| 3 \| ILEDELIVDOCITEM(I_DeliveryDocumentItem) \| ADDITIONALMATERIALGROUP1 \| 15 \| 出荷リスト情報 \| 該非-輸出令 \| - \| - \| コード値ではなく、テキスト
+- **Row 49:** =ROW()-34 \| 受注伝票 \| VBAK \| ヘッダ/受注管理 \| 登録者 \| CHAR \| 12 \| CSDSLSDOCITMDX1(C_SalesDocumentItemDEX_1) \| ZZCreatedByUser \| 19 \| 出荷リスト情報 \| 受注伝票発行者 \| - \| - \| 有 \| コード値ではなく、テキスト<br>出荷タイプが在庫転送以外の場合、当項目を出力する。<br>VBAK-ERNAMを取得し、USR21-BNAMEの検索条件とする。USR21-ADDRNUMBERを取得し、ADRP-PERSNUMBERの検索条件とする。取得できたNAME_LASTとNAME_FIRSTを格納する。
+- **Row 50:** =ROW()-34 \| 受注伝票 \| USR21 \| ヘッダ/受注管理 \| Addr番号 \| CHAR \| 12 \| Success FactorsのPerPersonalというAPIから取得し、DSPのローカルテーブルに格納するから取得予定(IF039) \| - \| 19 \| 出荷リスト情報 \| 受注伝票発行者 \| - \| - \| 有 \| コード値ではなく、テキスト<br>出荷タイプが在庫転送以外の場合、当項目を出力する。<br>VBAK-ERNAMを取得し、USR21-BNAMEの検索条件とする。USR21-ADDRNUMBERを取得し、ADRP-PERSNUMBERの検索条件とする。取得できたNAME_LASTとNAME_FIRSTを格納する。
+- **Row 51:** =ROW()-34 \| 在庫転送 \| EKKO \| ヘッダ \| 購買グループ \| CHAR \| 3 \| CMMPOITMDX(C_PURCHASEORDERITEMDEX) \| PURCHASINGGROUP \| 19 \| 出荷リスト情報 \| 受注伝票発行者 \| - \| - \| 有 \| コード値ではなく、テキスト<br>出荷タイプが在庫転送の場合、当項目を出力する。<br>購買グループのテキストを取得するために使用する。
+
+### プロセス定義
+
+- **Row 1:** ステップ定義
+- **Row 2:** No \| ステップ名 \| ステップタイプ \| Split \| 処理内容 \| エラー処理 \| 参照 \| 備考
+- **Row 3:** 1 \| JP1起動 \| SenderAdapter \| JP1からジョブネットから日次で実行される。<br>URLパスは以下の通りに設定する。<br>/039/01<br>※SenderのHTTP Adapterの設定にて、CSRF Protectedを設定<br>※共通処理CheckOAuth処理で認証が満たされない場合、Basic認証はエラーとする。 \| {<br>"reprocessFlag": "X"<br>}
+- **Row 4:** 2 \| 外部パラメータ取得 \| その他プロセス処理 \| HTTPのリクエストから受け取った値をPropertyに格納する。<br>・’Prop_Input_reprocessFlag’：再実行用フラグ<br>・条件用固定値の取得<br>・ファイルパスの取得 \| ※エラーが発生した場合、Payloadを出力してエラーで処理を終了する。<br>※エラーレスポンスをする。<br>"status": "ERROR",<br>"message": "システムエラー",<br>"ResponseCode"："500"
+- **Row 5:** サブプロセス（Local Integration process ）
+- **Row 6:** 3-1 \| エラー開始イベント \| その他プロセス処理 \| エラー処理を開始する \| Error Start Event
+- **Row 7:** 3-2 \| VMからパラメータ取得 \| その他プロセス処理 \| Value Mapping'Vmap_Common_Address'から以下の<br>パラメータを取得する。<br>・HPKDB：Address(Host名)・LocationID・CredentialName・Port<br>※本機能使用の判定条件は固定値の場合、Value Mappingで事前に定義対応 \| エラーが発生した場合、Payloadを出力してエラーで処理を終了する。<br>エラー発生時のメールでシステム管理者に通知する。<br>※シート：IF定義の(4)エラーハンドリングをご参照 \| Local Integration process
+- **Row 8:** 3-3 \| 終了処理 \| その他プロセス処理 \| 処理を終了する \| End Message
+- **Row 9:** 4 \| 再実行用フラグの判定 \| 分岐 \| Prop_Input_reprocessFlag’：再実行用フラグが’X’かどうか判断を行う。<br>・再実行用フラグが’X’の場合、DSPエラー履歴テーブル取得編集処理へ続行<br>・再実行用フラグが空白の場合、前回タイムスタンプ取得処理へ続行 \| 積み残し対応：DSPのアドオンテーブルから取得のように仕様変更対応
+- **Row 10:** 5 \| 前回タイムスタンプ取得 \| その他プロセス処理 \| 前回実行日時を取得するProp_LastRunTimestamp＝Lvari_LastRunTimestamp(前回実行日時)<br><br>出荷伝票情報取得処理へ続行 \| エラーが発生した場合、Payloadを出力してエラーで処理を終了する。<br>エラー発生時のメールでシステム管理者に通知する。
+- **Row 11:** 6-1 \| DSPエラー履歴テーブル取得編集 \| その他プロセス処理 \| 再実行用フラグが"X"場合のみ、DSPのエラー履歴テーブルからデータを取得するSQL分を作成する \| DB定義(04)<br>エラー履歴テーブル仕様 \| Content Modifier
+- **Row 12:** 6-2 \| DSPエラー履歴テーブル読込 \| ReceiverAdapter \| 再実行用フラグが"X"場合のみ、DSPから情報を依頼する \| Request Reply
+- **Row 13:** 6-3 \| DSPエラー履歴テーブル削除データ作成 \| その他プロセス処理 \| 再実行用フラグが"X"場合のみ、DSPエラー履歴テーブルからデータを削除するSQL分を作成する<br>※上記DSPからエラー履歴テーブルデータを読込んだ後、履歴テーブルデータの全件データを削除する \| DB定義(05)<br>エラー履歴テーブル仕様 \| Groovy Script
+- **Row 14:** 6-4 \| DSPエラー履歴テーブルデータ削除 \| ReceiverAdapter \| 再実行用フラグが"X"場合のみ、DSPエラー履歴テーブルデータの全件データを削除する<br>次は9.出荷伝票情報取得処理へ行く \| Request Reply
+- **Row 15:** 7 \| 日中・夜間・差分・再実行の分岐条件作成 \| その他プロセス処理 \| 通常データまたは遅延データより下記の処理を行う<br>差分処理<br>①外部パラメータ：再実行用フラグが'X'の場合、差分処理をしないこと<br>　・DSP履歴テーブルの出荷伝票番号と出荷明細番号より出荷伝票を取得する。<br><br>②外部パラメータ：再実行用フラグが空白の場合、<br> ・夜間実行の場合、差分処理をしないこと<br>(本日且つシステム時刻がAM:0:00~1:00は夜間判定、再実行の場合は考慮しません)<br>　夜間実施フラグを"X"で設定する。<br>　※ファイル名：夜間または日中の名前を決定する用<br><br>③外部パラメータ：再実行用フラグが空白の場合、<br> ・昼実行の場合、差分処理を行う<br>(本日且つシステム時刻がAM:1:00より大きいは昼判定、再実行の場合は考慮しません)<br>　 Write Variableに保存した前回実行日時で実施する。<br>　 条件：前回実行日付より大きい、または前回実行日付と同じ、 <br> 且つ前回実行時刻より大きいなど、対象データを取得する<br><br>④外部パラメータ：再実行用フラグが空白の場合、<br> SAP　Datasphereから連携してきた情報より \| DB定義(01)<br><br>再実行用フラグ<br>外部パラメータ定義(01) \| 下記の分岐より通常データと遅延データをそれぞれ情報を取得する<br>・通常の出荷リストデータ<br>　積載日=システム日付<br>・営業承認遅延の出荷リストデータ<br>　登録日が昨日、且つ積載日が過去日付<br><br>●再実行用フラグより分岐対応<br>①再実行用フラグがが"X"の場合<br>DSPテーブルにエラーデータを格納し、再実行フラグより再実行を行う<br>②再実行用フラグが空白の場合、<br>抽出条件よりDSPから対象データを取得する。
+- **Row 16:** ■下記の条件より対象出荷伝票の取得<br>・出荷伝票は不完全ではないこと('C'(完全))<br>・出荷明細は不完全ではないこと('C'(完全))<br>・出荷伝票は与信ブロックが設定されていないこと<br>　((与信ステータス)<>'B'、'C'(与信限度確認NG))<br>・出荷明細に未出庫数量があること<br> (在庫移動ステータス<>'C')<br>・通常の出荷リストデータ<br>　積載日=システム日付<br>・営業承認遅延の出荷リストデータ<br>　登録日が昨日、且つ積載日が過去日付<br>・抽出対象の出荷伝票タイプ<br>・標準出荷(Z100)、海外発送依頼(Z101)、標準無償出荷(Z102)、在庫転送(Z130)<br> 有償材料支給(Z132)、無償材料支給(Z134)<br>抽出対象の出荷ポイント<br>※抽出対象外として有償支給(国内)(1111)と有償支給(外部からBHP)(1113)と本社(1001)<br>・処理対象外明細カテゴリはBOM子および仕入先直送の明細カテゴリは除外する。<br>　明細カテゴリ<> 'Z1AA'(仕入先直送) and 'Z1BA'(無償費用 仕入先直送) and 'Z1KA'(無償 仕入先直送) and　'Z1C7'(預託引渡 BOM子) and 'Z1A7'(子BOM)<br>・出荷ブロックがブランクとなっている、または二段階承認用の出荷ブロックが設定されている出荷伝票は抽出対象外とする。<br>　出荷ブロック<>SPACE、'Z7'、と'Z9'<br>・プラント<br>　電子管(1001)、HPJ(1006)、固体(1002)、システム(1003)、レーザー(1004)
+- **Row 17:** 8 \| 出荷伝票情報及びキスト情報と名称の編集 \| その他プロセス処理 \| ■上記の条件より取得対象項目<br>出荷伝票のヘッダ情報取得<br>・出荷ポイント<br>・伝票タイプ※出力ファイル項目用ではない、ソート用<br>・出荷伝票番号<br>・積載日<br>・登録日※出力ファイル項目ではない、営業承認遅延判定用<br>・出庫予定日<br>・受注先<br>・インコタームズ<br>出荷伝票の明細情報の取得<br>・出荷明細番号<br>・品目コード<br>・明細/品目の明細テキスト<br>・出荷数量<br>・参照伝票番号<br>・参照明細番号<br>・品目Grp1(該非-輸出令)<br>・プラント※出力ファイル項目用ではない、ファイル出力事業部名称分岐用<br>受注伝票情報<br>・受注伝票タイプ<br>・登録担当者<br>・得意先参照<br>・受注伝票発行者<br>個人情報取得<br>・姓と名の取得
+- **Row 18:** 購買情報<br>・購買伝票タイプ<br>・購買グループ<br>品目マスタ情報取得<br>・責任原価センタ（製造）<br>・製品DB型名<br>販売伝票：取引先情報の取得<br>・得意先コード<br>・国/地域コード<br>・取引先機能<br>※取引先機能：受注先(SP)、出荷先(SH)、計画集計対象(ZC)→ユーザ会社名<br>得意先マスタ：一般データ情報の取得<br>・取引先の会社ID<br>ビジネスパートナー情報の取得<br>・検索語句1を受注先(受注先会社名)・出荷先(届出先会社名)・計画集計対象(ユーザ会社名)に設定する<br>※取引先の会社IDに値が入っているかつ仕向国(国/地域コード)がJP以外の場合<br>得意先品目/追加得意先品目取得<br>社外型名の取得<br>①テーブル「KNMTA」から得意先が使用する品目コードを取得し、追加得意先品目コード(社外型名)に設定する。※マッピング義No.22<br>②　①取得できない場合、製品DB型名の値がある場合、社外型名に設定する。<br>　　　※マッピング義No.23<br>③ ①と②がない場合、明細/品目の明細テキストの値がある場合、社外型名に設定する。<br>　　※マッピング定義No.24とマッピング定義No.21の設定が同じです。 \| DB定義(02)
+- **Row 19:** ・受注伝票の伝票タイプより伝票タイプテキスト取得<br><br>・購買伝票タイプテキスト<br>購買伝票タイプに対するテキストテーブルの購買伝票タイプと言語キー：JAを基に、購買伝票タイプテキストを取得する。<br><br>・購買グループテキスト<br>購買グループテーブルの購買グループより、購買グループテキストを取得する。<br><br>・品目Grp1のテキスト取得(該非-輸出令)<br>　品目グループ１より品目価格設定グループ１:テキストからテキストを取得する<br><br>・テキスト内容を取得<br>a. 出荷指図ヘッダテキストの取得<br>b. 出荷指図明細テキストの取得<br>c.規制関連情報明細テキストの取得 \| ヘッダテキスト<br>明細テキスト<br>DB定義(03)
+- **Row 20:** 通常データまたは遅延データより下記の処理を行う<br>IF定義の受信要件の海外ソート項目を参照し、降順でソートする。<br>受注先※出力ファイルを分けるため用<br>出荷ポイント<br>出庫日<br>伝票タイプ<br>海外発送依頼/有償材料支給/無償材料支給はファイルの最後に出力する<br>届け先カナ名<br>届け先BPコード<br>※カナ名については得意先マスタ「検索語句1」を使用するため、記号、英数字、アルファベット順、ひらがな、カナ、漢字の降順でソートする。<br>プラント（事業部）※出力ファイルを分けるため用 \| Groovy Script<br>例：取得のデータおり伝票タイプの順は下記の場合<br>無償材料支給が1~5番、海外発送依頼が6~10番、有償材料支給が11~20番、無償出荷が21~30番、標準出荷が31~40番で登録されていたとします。以下の通り出力していただきたいです。<br>ファイルの出力の時、下記の順で対応すること。<br>海外発送依頼/有償材料支給/無償材料支給の伝票タイプは最後の順になります。<br>①31~40番 標準出荷<br>②21~30番 無償出荷<br>③1~10番 海外発送依頼<br>④11~20番 有償材料支給<br>⑤1~5番 無償材料支給
+- **Row 21:** 9 \| 出荷伝票情報取得 \| ReceiverAdapter \| DSPから情報を依頼する \| Request Reply
+- **Row 22:** 10 \| Splitterr用データ事前準備 \| その他プロセス処理 \| 通常データまたは遅延データより下記の処理を行う<br><br>①再実行用フラグが空白の場合<br>・上記の情報データよりプラント、出荷日（入庫予定日）、受注先コードの単位で抽出する。<br>・Splitterr用のXMLを生成しボディに上書きする。<br><br>②再実行用フラグが"X"場合<br> ・取得のエラー履歴テーブルのデータ区分が"A"(通常エラーデータ)の場合、通常データとする<br>　・取得のエラー履歴テーブルのデータ区分が"B"(遅延エラーデータ)の場合、遅延データとする<br>　・Splitterr用のXMLを生成しボディに上書きする。 \| エラー履歴テーブルイメージ \| Groovy Script
+- **Row 23:** 11 \| 判定処理 \| 分岐 \| ・通常データと遅延データがない場合、差分データを保存し、処理が正常終了する<br>・通常データ、または遅延データがある場合、データを分ける処理へ行く \| Router
+- **Row 24:** 12-1 \| 差分データ保存 \| その他プロセス処理 \| タイムスタンプ情報を保存し、Variableに追加する。<br>①前回実行日時をWrite Variableの今回実行日時で保存する。<br>Lvari_LastRunTimestamp(前回実行日時)<br>=Prop_NowRunTimestamp(今回実行日時)<br>②夜間実施フラグをクリアする。 \| Write Variables
+- **Row 25:** 12-2 \| 正常レスポンス作成<br>※受入完了あと、SAP指摘追加分 \| その他プロセス処理 \| 正常レスポンスを作成する。<br>"ResponseCode"："200" \| ※エラーが発生した場合、Payloadを出力してエラーで処理を終了する。<br>※エラーレスポンスをする。<br>"ResponseCode"："400" \| Content Modifier
+- **Row 26:** 12-3 \| 終了処理 \| その他プロセス処理 \| エラーせず、処理終了 \| End Message
+- **Row 27:** 13 \| データを分ける処理 \| Splitter \| ✓ \| ・通常データは事業部（プラント）、出庫日、受注先コードよりデータを分ける<br>・遅延データは事業部（プラント）、出庫日、受注先コードよりデータを分ける<br>※(事業部)プラント単位でデータを分ける。<br>1.電子管(1001)<br>2.固体(1002)<br>3.システム(1003)<br>4.レーザー(1004) \| Iterating Splitter \| v1.03変更
+- **Row 28:** 14 \| 情報加工 \| その他プロセス処理 \| ✓ \| 通常データまたは遅延データより下記の処理を行う<br>■マッピング定義を構造した正常（夜間・日中）データを加工する※データ単位で実施<br>①ヘッダ情報の編集<br>②マッピング定義の送信側の項目構造で対応イメージ<br>正常データ<br><records><br> <record><br> <field1>ORDERID</field1><br></record><br></records><br>※構造イメージ：項目<br><br>■マッピング定義を構造したエラー（夜間・日中）データを加工する<br>①ヘッダ情報の編集<br>②マッピング定義の送信側の項目構造で対応<br>エラーデータ（テキスト、名称など値がないデータ）<br>※DB定義の08~10よりエラー対象項目とエラーメッセージ情報を参照<br></record><br> <record><br> <field1>ORDERID</field1><br> <errorMessage>ERROR</errorMessage><br> </record><br></records><br>※構造イメージ：項目＋message \| マッピング定義<br>DB定義の08~10よりエラーメッセージ情報を参照 \| Groovy Script
+- **Row 29:** 15 \| データ並行分岐処理 \| 分岐 \| ・共通対応、ファイルパス定義処理へ行く<br>・遅延エラーデータがある場合、遅延エラーファイル名設定処理へ行く<br>・正常成功データがある場合、正常成功ファイル名設定処理へ行く<br>・遅延成功データがある場合、遅延成功ファイル名設定処理へ行く<br>・正常エラーデータがある場合、正常エラーファイル名設定処理へ行く<br>※上記分けた(事業部)プラント単位データよりファイル名、ファイルパスを決定する<br>1.電子管(1001)<br>2.固体(1002)<br>3.システム(1003)<br>4.レーザー(1004) \| エラーが発生した場合、Payloadを出力してエラーで処理を終了する。<br>エラー発生時のメールでシステム管理者に通知する。<br>※シート：IF定義の(4)エラーハンドリングをご参照 \| Router \| v1.03変更
+- **Row 30:** 16-1 \| ファイルパス定義 \| その他プロセス処理 \| ファイルパスをプロパティに定義する<br>・Name:Prop_NormalFile_Path<br>・Type:Constant<br>次処理はファイル出力処理へ行く \| エラーが発生した場合、Payloadを出力してエラーで処理を終了する。<br>エラー発生時のメールでシステム管理者に通知する。<br>※シート：IF定義の(4)エラーハンドリングをご参照 \| File定義 \| Content Modifier
+- **Row 31:** 16-2 \| 遅延エラーファイル名設定 \| その他プロセス処理 \| 遅延エラーファイル名設定を行う。<br>次処理はデータの変換処理へ行く \| File定義06,08 \| Content Modifier
+- **Row 32:** 16-3 \| 正常成功ファイル名設定 \| その他プロセス処理 \| 正常成功ファイル名設定を行う。<br>次処理はデータの変換処理へ行く \| File定義01,03 \| Content Modifier
+- **Row 33:** 16-4 \| 遅延成功ファイル名設定 \| その他プロセス処理 \| 遅延成功ファイル名設定を行う。<br>次処理はデータの変換処理へ行く \| File定義02,04 \| Content Modifier
+- **Row 34:** 16-5 \| 正常エラーファイル名設定 \| その他プロセス処理 \| 正常エラーファイル名設定を行う。<br>次処理はデータの変換処理へ行く \| File定義05,07 \| Content Modifier
+- **Row 35:** 17 \| データの変換 \| その他プロセス処理 \| 抽出したデータを元にパイプ区切りのテキストへ変換する<br>形式を変換する（XML→CSV）<br>※カンマ「,」区切りテキストファイル \| エラーが発生した場合、Payloadを出力してエラーで処理を終了する。<br>エラー発生時のメールでシステム管理者に通知する。<br>※シート：IF定義の(4)エラーハンドリングをご参照 \| XML To CSV Converter
+- **Row 36:** 18 \| 共有フォルダに出力 \| ReceiverAdapter \| 編集しファイルを共有フォルダ出力に出力する。<br>※出力時全項目を明細単位でフラットファイルとして出力する（ヘッダ・明細・その他項目を1行で保持する） \| エラーが発生した場合、Payloadを出力してエラーで処理を終了する。<br>エラー発生時のメールでシステム管理者に通知する。<br>※シート：IF定義の(4)エラーハンドリングをご参照 \| File定義 \| Send
+- **Row 37:** 19-1 \| DSPエラー履歴テーブル更新データ作成 \| その他プロセス処理 \| エラーデータよりDSPエラー履歴テーブルの更新データを作成する。(一括更新・挿入)<br>※一括UPSERTの SQL生成<br>①販売伝票、明細、データ区分をキーとして履歴テーブルに存在しない場合、登録データを作成する<br> ・通常エラーデータの場合、データ区分を"A"(通常エラーデータ)で設定する<br>　・遅延エラーデータの場合、データ区分を"B"(遅延エラーデータ)で設定する<br><br>②販売伝票、明細、データ区分をキーとして履歴テーブルに存在する場合、更新データを作成する \| DB定義(06)登録<br>DB定義(07)更新<br>エラー履歴テーブル仕様 \| Groovy Script
+- **Row 38:** 19-2 \| DSPエラー履歴テーブルデータ更新 \| ReceiverAdapter \| 生成されたSQL文でDSPエラー履歴テーブルデータを一括で更新する<br>・上記の処理より登録データがある場合、DSPエラー履歴テーブルデータに登録する<br>・上記の処理より更新データがある場合、DSPエラー履歴テーブルデータを更新する \| Request Reply
+- **Row 39:** 20 \| Gather<br>※受入後対応予定 \| その他プロセス処理 \| ファイル出力後、情報を連結する。 \| Gather
+- **Row 40:** 21 \| 差分処理判定 \| 分岐 \| ・再実行ではない場合、差分保存処理へ<br>・再実行の場合、正常レスポンス作成処理へ行く \| Router
+- **Row 41:** サブプロセス（Exception ）
+- **Row 42:** 22 \| エラー開始イベント<br>※受入後対応予定 \| その他プロセス処理 \| エラー処理を開始する \| Error Start Event
+- **Row 43:** 23 \| Attachment出力処理<br>※受入後対応予定 \| その他プロセス処理 \| エラー発生時のPayloadをAttachMentに出力する \| Groovy Script
+- **Row 44:** 24 \| 終了処理<br>※受入後対応予定 \| その他プロセス処理 \| 処理を終了する \| Error End Event
+
+### DB定義
+
+- **Row 1:** DB定義
+- **Row 2:** No \| 方式 \| テーブル名 \| 処理概要 \| その他仕様
+- **Row 3:** 01 \| 読込 \| HPK_Datasphere_XXX \| 出荷リスト情報データを取得する。<br>(結合条件)<br>IF_C_SalesDocumentItemDEX_1-SALESDOCUMENT(受注伝票番号)=IF_I_DeliveryDocumentItem-REFERENCESDDOCUMENT(出荷明細の参照伝票番号)<br>IF_I_DeliveryDocumentItem-DELIVERYDOCUMENT(出荷明細データの伝票番号)=IF_I_DeliveryDocument-DELIVERYDOCUMENT(出荷ヘッダデータの伝票番号)<br>IF_I_Product-PRODUCT(一般商品データの品目コード)=IF_I_DeliveryDocumentItem-MATERIAL(出荷明細の品目)<br>IF_C_SalesDocumentItemDEX_1-SALESDOCUMENTITEM(販売伝票：明細データ-明細番号)=IF_I_DeliveryDocumentItem-REFERENCESDDOCUMENTITEM(出荷明細の参照伝票明細番号)<br>IF_ZI_XA_CustMatInfoRec-SALESORGANIZATION(得意先/品目情報の販売組織)=IF_C_SalesDocumentItemDEX_1-SALESORGANIZATION(受注ヘッダデータの販売組織)<br>IF_ZI_XA_CustMatInfoRec-DISTRIBUTIONCHANNEL(得意先/品目情報の流通チャネル)=IF_C_SalesDocumentItemDEX_1-DISTRIBUTIONCHANNEL(受注ヘッダの流通チャネル)<br>IF_ZI_XA_CustMatInfoRec-CUSTOMER(得意先/品目情報の受注先)=IF_C_SalesDocumentItemDEX_1-SOLDTOPARTY(受注ヘッダの受注先)<br>IF_ZI_XA_CustMatInfoRec-MATERIAL(得意先/品目情報の品目)=IF_C_SalesDocumentItemDEX_1-MATERIAL(出荷明細の品目)<br>IF_ZI_SD_SalesDocPartner-SALESDOCUMENT(販売伝票:取引先の伝票番号)=IF_I_DeliveryDocumentItem-DELIVERYDOCUMENT(出荷明細データの伝票番号)<br>IF_I_Customer-CUSTOMER(得意先マスタの得意先コード)=IF_ZI_SD_SalesDocPartner-CUSTOMER(得意先コード)<br>IF_I_BusinessPartner-BUSINESSPARTNER(ビジネスパートナ番号)=IF_I_Customer-CUSTOMER(得意先マスタの得意先コード)<br>IF_C_PurchaseOrderItemDEX-PURCHASEORDER(購買伝票ヘッダの伝票番号)=IF_I_DeliveryDocumentItem-REFERENCESDDOCUMENT(出荷明細の参照伝票番号)<br>IF_PerPersonal-personIdExternal(Person ID External) = IF_C_SalesDocumentItemDEX_1-ZZCreatedByUser(受注登録者)<br>(取得条件)<br>IF_ZI_XA_AddrOrgPostalAddr-NATION(国際アドレスのバージョン ID)=I(国際版)<br>IF_ZI_SD_SalesDocPartner-PARTNERFUNCTION(取引先機能)=受注先「SP(AG)」 or 出荷先「SH(WE)」 or 計画集計対象「ZC」<br>(IF_ZI_SD_SalesDocPartner-US_FRGNACCTTAXRCPNTCNTRY(国/地域コード)<>'JP'　AND<br>IF_ZI_SD_SalesDocPartner-PARTNERFUNCTION(取引先機能)= 出荷先「SH(WE)」)<br>IF_I_DeliveryDocument-HDRGENERALINCOMPLETIONSTATUS( 不完全ステータス(ヘッダ))='C'(完全)<br>IF_I_DeliveryDocumentItem-ITEMGENERALINCOMPLETIONSTATUS(不完全ステータス(明細))='C'(完全)<br>IF_I_DeliveryDocument-TOTALCREDITCHECKSTATUS(与信ステータス)<>'B' and 'C'(与信ブロック)※与信限度確認を実行済：伝票NG<br>IF_I_DeliveryDocumentItem-GOODSMOVEMENTSTATUS(在庫移動ステータス)<>'C'<br>IF_I_DeliveryDocumentItem-PLANT=電子管(1001)、HPJ(1006)、固体(1002)、システム(1003)、レーザー(1004)
+- **Row 4:** ・通常の出荷リストデータを取得するとき<br>　積載日付(IF_I_DeliveryDocument-LOADINGDATE)＝システム日付　　　　　 または（※別々で抽出して格納）<br>・営業承認遅延の出荷リストデータを取得するとき<br>登録日付(IF_I_DeliveryDocument-CREATIONDATE)＝システム日付-1 and<br>　積載日付(IF_I_DeliveryDocument-LOADINGDATE)<システム日付<br>IF_I_DeliveryDocument-DELIVERYDOCUMENTTYPE(出荷タイプ)=標準出荷(Z100) or 海外発送依頼(Z101) or 標準無償出荷(Z102)<br> or 在庫転送(プラント間)(Z130) or 有償材料支給(Z132) or無償材料支給(Z134) <br>IF_I_DeliveryDocument-SHIPPINGPOINT(出荷ポイント)<>有償支給(国内)(1111) and 有償支給(外部からBHP)(1113) and 本社(1001)<br>IF_I_DeliveryDocument-DELIVERYBLOCKREASON(出荷ブロック)<>SPACE and 'Z7' and 'Z9'<br>IF_I_DeliveryDocumentItem-DELIVERYDOCUMENTITEMCATEGORY(明細カテゴリ)<> 'Z1AA'(仕入先直送) and 'Z1BA'(無償費用 仕入先直送) and 'Z1KA'(無償 仕入先直送) and　'Z1C7'(預託引渡 BOM子) and 'Z1A7'(子BOM)<br>■昼実行(システム日付が本日且つシステム時刻がAM:1:00より大きい)の場合、外部パラメータ「Ex_reprocessFlag」が設定なしの場合<br>IF_I_DeliveryDocument-CREATIONDATE(登録日付)>前回実行日時の日付　or　　　　　　※①ヘッダ差分　　　　　　　　　<br>IF_I_DeliveryDocument-CREATIONDATE(登録日付)=前回実行日時の日付　and　　　　　※②ヘッダ差分<br>IF_I_DeliveryDocument-CREATIONTIME(登録時刻)>前回実行日時の時刻　 or <br>IF_I_DeliveryDocument-LASTCHANGEDATE(変更日)<>IF_I_DeliveryDocument-CREATIONDATE(登録日付)and ※③ヘッダ差分<br>IF_I_DeliveryDocument-LASTCHANGEDATE(変更日)>前回実行日時の日付　or　　　<br>IF_I_DeliveryDocument-LASTCHANGEDATE(変更日) <>IF_I_DeliveryDocument-CREATIONDATE(登録日付) and 　　※④明細差分<br>IF_I_DeliveryDocument-LASTCHANGEDATE(変更日) <>IF_I_DeliveryDocument-LASTCHANGEDATE(変更日) and ※⑤明細差分<br>IF_I_DeliveryDocument-LASTCHANGEDATE(変更日)>前回実行日時の日付<br>※Lvari_LastRunTimestamp(前回実行日時)<br>■最実行の場合、外部パラメータ：再実行用フラグ「Ex_reprocessFlag」が'X'の場合より<br>IF_I_DeliveryDocument-DELIVERYDOCUMENT(出荷伝票) IN Ex_deliveryList(出荷伝票番号)<br>■夜間実行(システム日付が本日且つシステム時刻がAM:0:00~1:00)の場合、外部パラメータ：再実行用フラグ「Ex_reprocessFlag」が設定なしの場合<br>　 差分処理が行わない
+- **Row 5:** (取得項目)<br>出荷ポイント(IF_I_DeliveryDocument-SHIPPINGPOINT)<br>出荷伝票タイプ(IF_I_DeliveryDocument-DELIVERYDOCUMENTTYPE)※※出力ファイル項目用ではない、ソート用<br>品目コード(IF_I_DeliveryDocumentItem-MATERIAL)<br>責任原価センタ（製造）(IF_I_Product-ZZ1_COSTC_MANUz2_PRD)<br>製品DB型名(IF_I_Product-ZZ1_DB_Name_PRD_PRD)<br>出庫予定日付(IF_I_DeliveryDocument-PLANNEDGOODSISSUEDATE)<br>積載日付(IF_I_DeliveryDocument-LoadingDate)<br>インコタームズ(IF_I_DeliveryDocument-IncotermsClassification)<br>受注先(IF_I_DeliveryDocument-SOLDTOPARTY)<br>得意先参照(IF_C_SalesDocumentItemDEX_1-PURCHASEORDERBYCUSTOMER)<br>出荷伝票番号(IF_I_DeliveryDocumentItem-DELIVERYDOCUMENT)<br>出荷明細番号(IF_I_DeliveryDocumentItem-DELIVERYDOCUMENTITEM)<br>明細テキスト(IF_I_DeliveryDocumentItem-SALESDOCUMENTITEMTEXT)：社内型名<br>出荷数量実績(IF_I_DeliveryDocumentItem-ACTUALDELIVERYQUANTITY)<br>参照伝票番号(IF_I_DeliveryDocumentItem-REFERENCESDDOCUMENT(出荷明細の参照伝票番号))<br>参照明細番号(IF_I_DeliveryDocumentItem-REFERENCESDDOCUMENTITEM(出荷明細の参照伝票明細番号)<br>品目Grp1(該非-輸出令)(IF_I_DeliveryDocumentItem-ADDITIONALMATERIALGROUP1)<br>登録担当者(IF_C_SalesDocumentItemDEX_1-ZZCreatedByUser)<br>得意先が使用する品目コード(社外型名)(IF_ZI_XA_CustMatInfoRec-KNMTA_MATERIALDESCRBYCUSTOMER)<br>取引先機能(IF_ZI_SD_SalesDocPartner-PARTNERFUNCTION)<br>国/地域コード(IF_ZI_SD_SalesDocPartner-US_FRGNACCTTAXRCPNTCNTRY)<br>得意先マスタの取引先の会社ID(IF_I_Customer-TRADINGPARTNER)<br>検索語句1(IF_I_BusinessPartner-SEARCHTERM1)※出力項目用<br>名称1(IF_ZI_XA_AddrOrgPostalAddr-AddresseeName1)<br>名称2(IF_ZI_XA_AddrOrgPostalAddr-AddresseeName2)<br>プラント(IF_I_DeliveryDocumentItem-PLANT)※出力ファイル項目用ではない、ファイル出力事業部名称分岐用<br>受注ヘッダデータの伝票タイプ(IF_C_SalesDocumentItemDEX_1-SALESDOCUMENTTYPE)※テキスト取得用<br>購買伝票ヘッダのグループ(IF_C_PurchaseOrderItemDEX-PURCHASINGGROUP)※テキスト取得用<br>購買伝票ヘッダの伝票タイプ(IF_C_PurchaseOrderItemDEXt-PURCHASEORDERTYPE)※テキスト取得用<br>社内名英字(IF_PerPersona-businessFirstNameAlt2)<br>社内姓英字(IF_PerPersona-businessLastNameAlt2)<br>・対象データがない場合、処理が正常終了する<br>・対象データがある場合、後続処理へ行く
+- **Row 6:** 02 \| 読込 \| HPK_Datasphere_XXX \| 上記取得の出荷リスト情報の通常データまたは遅延データより下記の処理を行い、テキストの取得<br>※テキストが取得できない場合、空白のままで設定<br>・販売伝票タイプのテキストの取得<br>(結合条件)<br>IF_I_SalesDocumentTypeText-SALESDOCUMENTTYPE(販売伝票タイプ:テキストの販売伝票タイプ)=上記No.01でIF_C_SalesDocumentItemDEX_1-SALESDOCUMENTTYPE(受注ヘッダデータの伝票タイプ)<br>(取得条件)<br>IF_I_SalesDocumentTypeText-LANGUAGE(言語キー)='JA'<br>(取得項目)<br>販売伝票タイプテキスト(IF_I_SalesDocumentTypeText-SALESDOCUMENTTYPENAME<br>・購買発注の伝票タイプのテキスト<br>(結合条件)<br>IF_I_PurchasingDocumentTypeText-PURCHASINGDOCUMENTTYPE(購買伝票タイプテキストの伝票タイプ)=上記No.01で取得のIF_C_PurchaseOrderItemDEX-PURCHASEORDERTYPE(購買伝票ヘッダの伝票タイプ)<br>IF_I_PurchasingGroup-PURCHASINGGROUP(購買グループの購買グループ)=上記No.01で取得のIF_C_PurchaseOrderItemDEX-PURCHASINGGROUP(購買伝票ヘッダのグループ)<br>(取得条件)<br>IF_I_PurchasingDocumentTypeText-PurchasingDocumentCategory='F'(購買発注)<br>IF_I_PurchasingDocumentTypeText-LANGUAGE(言語キー)='JA'<br>(取得項目)<br>IF_I_PurchasingDocumentTypeText-PURCHASINGDOCUMENTTYPENAME(購買伝票タイプテキスト)<br>IF_I_PurchasingGroup-PURCHASINGGROUPNAME(購買グループテキスト)<br>※出荷タイプが在庫転送の場合、項目を出力する。<br>・品目Grp1のテキスト取得(該非-輸出令)<br>(結合条件)<br>品目グループ１(IF_I_AdditionalMaterialGroup1Text-ADDITIONALMATERIALGROUP1)=上記No.01で品目グループ１(IF_I_DeliveryDocumentItem-ADDITIONALMATERIALGROUP1)<br>(取得条件)<br>言語キー(IF_I_AdditionalMaterialGroup1Text-LANGUAGE)='JA'<br>(取得項目)<br>テキスト(IF_I_AdditionalMaterialGroup1Text-ADDITIONALMATERIALGROUP1NAME) \| 参考イメージ：select~for all enters in table
+- **Row 7:** 03 \| 読込 \| HPK_Datasphere_XXX \| 上記取得の出荷リスト情報の通常データまたは遅延データより下記の処理を行い、出荷指図(ヘッダテキストと明細テキスト)、規制関連情報を取得する。<br>a. 出荷指図ヘッダテキストの取得<br> ZSDTLX_0001から<br>(取得条件)<br> テキストオブジェクト(ZSDTLX_0001-TDOBJECT)=VBBK<br> 名称(ZSDTLX_0001-TDNAME)=出荷伝票番号と明細番号の結合<br> テキストID(ZSDTLX_0001-TDID)=Z108<br> 言語キー(ZSDTLX_0001-TDSPRAS)=JA<br>(取得項目)<br> 出荷指図ヘッダテキスト(ZSDTLX_0001-TEXT)<br><br>b. 出荷指図明細テキストの取得<br>(取得条件)<br> テキストオブジェクト(ZSDTLX_0002-TDOBJECT)=VBBP<br> 名称(ZSDTLX_0002-TDNAME)=出荷伝票番号と明細番号の結合<br> 伝票番号(ZSDTLX_0002-VBELN)=出荷伝票番号<br>　　明細番号(ZSDTLX_0002-POSNR)=明細番号<br> テキストID(ZSDTLX_0002-TDID)=Z202<br> 言語キー(ZSDTLX_0002-TDSPRAS)=JA<br>(取得項目)<br> 出荷指図明細テキスト(ZSDTLX_0002-TEXT)<br><br> c.規制関連情報の取得<br>(取得条件)<br>　　 テキストオブジェクト(ZSDTLX_0002-TDOBJECT)=VBBP<br> 名称(ZSDTLX_0002-TDNAME)=出荷伝票番号と明細番号の結合<br> 伝票番号(ZSDTLX_0002-VBELN)=出荷伝票番号<br>　　明細番号(ZSDTLX_0002-POSNR)=明細番号<br> テキストID(ZSDTLX_0002-TDID)=Z200<br> 言語キー(ZSDTLX_0002-TDSPRAS)=ID<br>(取得項目)<br>　　規制関連情報(ZSDTLX_0002-TEXT)
+- **Row 8:** 04 \| 読込 \| 出荷カード情報IF_エラー履歴テーブル \| DSPの出荷カード情報IF_エラー履歴テーブルデータを取得する<br>(抽出条件)<br>なし、全件取得<br>(取得項目)<br>全項目<br>※エラー履歴テーブルイメージ \| v0.3mod
+- **Row 9:** 05 \| 削除 \| 出荷カード情報IF_エラー履歴テーブル \| レコードを削除する。<br>(削除条件)<br>全件データ削除<br>※エラー履歴テーブル仕様 \| v0.5mod
+- **Row 10:** 06 \| 登録 \| 出荷カード情報IF_エラー履歴テーブル \| レコードを登録する。<br>(登録項目)<br>全項目<br>※エラー履歴テーブル仕様 \| v0.5mod
+- **Row 11:** 07 \| 変更 \| 出荷リスト海外IF_エラー履歴テーブル \| 項目を更新する。<br>(更新条件)<br>出荷伝票 =エラー対象の出荷伝票<br>出荷明細 = エラー対象の出荷明細<br>データ区分 = エラー対象のデータ区分<br>(変更項目)<br>※エラー履歴テーブル仕様 \| v0.5mod
+- **Row 12:** 08 \| その他 \| 上記取得の出荷リスト情報の通常データまたは遅延データより下記の処理を行い、マッピング定義を参照し、出荷リスト情報を加工する。<br>IF定義のプロセス内容も参照し、出力ファイルのデータを加工する。<br>マッピング定義L列No.1(出荷場所)<br>出荷ポイント(IF_I_DeliveryDocument-SHIPPINGPOINT)を出荷場所に設定する<br>マッピング定義L列No.2(受注No.)<br>　参照伝票番号(IF_I_DeliveryDocumentItem-REFERENCESDDOCUMENT)と参照明細番号(IF_I_DeliveryDocumentItem-REFERENCESDDOCUMENTITEM)をハイフンで繋げて受注番号に設定<br>マッピング定義L列No.3(出荷No.) <br>　出荷伝票番号(IF_I_DeliveryDocumentItem-DELIVERYDOCUMENT)と出荷明細番号(IF_I_DeliveryDocumentItem-DELIVERYDOCUMENTITEM)をハイフンで繋げる<br>マッピング定義L列No.4(受注方法) <br> 販売伝票タイプテキスト(IF_I_SalesDocumentTypeText-SALESDOCUMENTTYPENAME)を受注方法に設定する。※在庫転送以外設定<br>　 ※テキスト取得できない場合、エラーデータに格納する。次のデータへ処理へ行く<br>　　「受注方法(販売伝票タイプテキスト)が取得できません。　出荷伝票番号:出荷伝票番号の値　明細番号:明細番号の値」<br>マッピング定義L列No.4(受注方法)<br> 出荷タイプ「Z130」プラント間在庫転送場合、「Z134」無償材料支給の場合、IF_I_PurchasingDocumentTypeText-PURCHASINGDOCUMENTTYPENAME(購買伝票タイプテキスト)を設定する。<br>　　 ※テキスト取得できない場合、エラーデータに格納する。次のデータへ処理へ行く<br>　　「受注方法(購買伝票タイプテキスト)が取得できません。　出荷伝票番号:出荷伝票番号の値　明細番号:明細番号の値」<br>マッピング定義L列No.5(受注先コード)<br> 受注先(IF_I_DeliveryDocument-SOLDTOPARTY) を受注先コードに設定する。※出荷タイプが在庫転送の場合、ブランクとする。<br>現法の場合、略称を出力する。<br>受注先会社名、ユーザ会社名、届出先会社名※現法略称を出力<br>※(IF_ZI_SD_SalesDocPartner-PARTNERFUNCTION(取引先機能)= 出荷先「SH(WE)」 AND IF_ZI_SD_SalesDocPartner-US_FRGNACCTTAXRCPNTCNTRY(国/地域コード))がJP以外の場合、取引先の会社ID(IF_I_Customer-TRADINGPARTNER)が空白ではない場合、<br>マッピング定義L列No.6(受注先会社名)<br>・取引先機能(IF_ZI_SD_SalesDocPartner-PARTNERFUNCTION)が受注先「SP(AG)」 の場合、取引先の会社ID(IF_I_Customer-TRADINGPARTNER)の値がある場合、検索語句1(IF_I_BusinessPartner-SEARCHTERM1)の値を受注先会社名に設定する。<br>　※取得できない場合、エラーデータに格納する。次のデータへ処理へ行く<br>　　「受注先会社名が取得できません。出荷伝票番号:出荷伝票番号の値　明細番号:明細番号の値」
+- **Row 13:** 09 \| その他 \| マッピング定義L列No.7(ユーザ会社名)<br>・取引先機能(IF_ZI_SD_SalesDocPartner-PARTNERFUNCTION)が計画集計対象「ZC」 の場合、検語句1(IF_I_BusinessPartner-SEARCHTERM1)の値をユーザ会社名に設定する。<br>　※取得できない場合、エラーデータに格納する。次のデータへ処理へ行く<br>　　「ユーザ会社名が取得できません。出荷伝票番号:出荷伝票番号の値　明細番号:明細番号の値」<br>マッピング定義L列No.8(届出先会社名)<br>　取引先機能(IF_ZI_SD_SalesDocPartner-PARTNERFUNCTION)が出荷先「SH(WE)」 の場合、且つ検索語句1(IF_I_BusinessPartner-SEARCHTERM1)の値を届出先会社名に設定する。<br>※取得できない場合、エラーデータに格納する。次のデータへ処理へ行く<br>　　「届出先会社名が取得できません。出荷伝票番号:出荷伝票番号の値　明細番号:明細番号の値」<br><br>現法以外の場合<br>※(IF_ZI_SD_SalesDocPartner-PARTNERFUNCTION(取引先機能)= 出荷先「SH(WE)」 AND IF_ZI_SD_SalesDocPartner-US_FRGNACCTTAXRCPNTCNTRY(国/地域コード))がJP以外の場合、取引先の会社ID(IF_I_Customer-TRADINGPARTNER)が空白の場合、<br>マッピング定義L列No.6(受注先会社名)<br>・取引先機能(IF_ZI_SD_SalesDocPartner-PARTNERFUNCTION)が受注先「SP(AG)」 の場合、<br> 受注先の名称1(IF_ZI_XA_AddrOrgPostalAddr-AddresseeName1)と名称2(IF_ZI_XA_AddrOrgPostalAddr-AddresseeName2)を結合してを受注先会社名に設定する。<br>・マッピング定義L列No.7(ユーザ会社名)<br>・取引先機能(IF_ZI_SD_SalesDocPartner-PARTNERFUNCTION)が計画集計対象「ZC」 の場合、<br>　　計画集計対象の名称1(IF_ZI_XA_AddrOrgPostalAddr-AddresseeName1)と名称2(IF_ZI_XA_AddrOrgPostalAddr-AddresseeName2)を結合してユーザ会社名に設定する。<br>　※取得できない場合、エラーデータに格納する。次のデータへ処理へ行く<br>　　「ユーザ会社名が取得できません。出荷伝票番号:出荷伝票番号の値　明細番号:明細番号の値」<br>マッピング定義L列No.8(届出先会社名)<br>・取引先機能(IF_ZI_SD_SalesDocPartner-PARTNERFUNCTION)が出荷先「SH(WE)」 の場合、<br>　出荷先の名称1(IF_ZI_XA_AddrOrgPostalAddr-AddresseeName1)と名称2(IF_ZI_XA_AddrOrgPostalAddr-AddresseeName2)を結合して届出先会社名に設定する。<br>※取得できない場合、エラーデータに格納する。次のデータへ処理へ行く<br>　　「届出先会社名が取得できません。出荷伝票番号:出荷伝票番号の値　明細番号:明細番号の値」<br><br>マッピング定義L列No.9(インコタームズ)<br> インコタームズ(IF_I_DeliveryDocument-INCOTERMSCLASSIFICATION)<br>マッピング定義L列No.10(得意先参照→注文番号)<br>　得意先参照(IF_C_SalesDocumentItemDEX_1-PURCHASEORDERBYCUSTOMER)の値がある場合、注文番号に設定する。<br>　※出荷タイプが在庫転送の場合、ブランクとする。<br>マッピング定義L列No.11(責任原価センタ（製造））→経費コード)<br> 責任原価センタ（製造）(IF_I_Product-ZZ1_COSTC_MANUz2_PRD)を経費コードに設定する。<br>マッピング定義L列No.12(明細テキスト→社内型名)<br>　 明細テキスト(IF_I_DeliveryDocumentItem-SALESDOCUMENTITEMTEXT)を社内型名に設定する。<br>※社内型名取得できない場合、エラーデータに格納する。次のデータへ処理へ行く<br>　「社内型名が取得できません。　出荷伝票番号　明細番号出荷伝票番号:出荷伝票番号の値　明細番号:明細番号の値」
+- **Row 14:** 10 \| その他 \| マッピング義L列No.13(追加得意先品目コード→社外型名)<br>　 得意先が使用する品目コード(社外型名)(IF_ZI_XA_CustMatInfoRec-KNMTA_MATERIALDESCRBYCUSTOMER)の値がある場合を社外型名に設定する。<br>マッピング義L列No.13(製品DB型名→社外型名)<br>　 得意先が使用する品目コードがない場合、製品DB型名(IF_I_Product-ZZ1_DB_NAME_PRD_PRD)を社外型名に設定する。<br>マッピング義L列No.13(明細テキスト→社外型名)<br> 得意先が使用する品目コードと製品DB型名(IF_I_Product-ZZ1_DB_NAME_PRD_PRD)がない場合、<br>　 明細テキスト(IF_I_DeliveryDocumentItem-SALESDOCUMENTITEMTEXT)を社外型名に設定する。<br>※社外型名取得できない場合、エラーデータに格納する。次のデータへ処理へ行く<br>　　「社外型名が取得できません。　出荷伝票番号:出荷伝票番号の値　明細番号:明細番号の値」<br>マッピング義L列No.14(出荷数量→数量)<br> 出荷数量実績(IF_I_DeliveryDocumentItem-ACTUALDELIVERYQUANTITY)を数量に設定する。<br>マッピング義L列No.15(品目Grp1→該非-輸出令)<br> 品目Grp1(該非-輸出令)テキスト(IF_I_DeliveryDocumentItem-ADDITIONALMATERIALGROUP1)<br>マッピング義L列No.16(出庫予定日→出荷日)<br> 出庫予定日付(IF_I_DeliveryDocument-PLANNEDGOODSISSUEDATE)を出荷日に設定する。<br>マッピング義L列No.17(ロングテキスト-出荷指図ヘッダ/テキスト→摘要欄)<br>　ロングテキストの出荷指図ヘッダテキストと明細テキストを結合して摘要欄に設定する。<br>マッピング義L列No.18(ロングテキスト-品目販売テキスト(規制関連情報)→規制関連情報)<br>マッピング義L列No.19(姓と名→受注伝票発行者)※出荷タイプが在庫転送以外の場合<br>　社内姓(IF_PerPersona-businessLastName)と社内名(IF_PerPersona-businessFirstName)を半角スペースで結合し、設定する。※DSP配置予定<br>マッピング定義L列No.19(購買グループテキスト→受注伝票発行者) ※出荷タイプが在庫転送の場合<br> IF_I_PurchasingGroup-PURCHASINGGROUPNAME(購買グループテキスト)<br>　※取得できない場合、エラーデータに格納する。次のデータへ処理へ行く<br>　「購買グループテキストが取得できません。　出荷伝票番号:出荷伝票番号の値　明細番号:明細番号の値」
+
+### リスト
+
+- **Row 1:** 業務分類 \| データ種類 \| ASIS/新 \| 通信プロトコル \| 起動方法 \| 実行サイクル \| 全件/差分 \| ステップタイプ \| ファイル形式 \| プロトコル \| ファイル方式 \| 方式(API/DB) \| ステップタイプ \| Eventタイプ \| APIタイプ \| Split
+- **Row 3:** 製造 \| マスタ \| ASIS \| ファイル \| 時間間隔 \| 発生ベース \| 全件 \| SenderAdapter \| CSV \| FTP(Passive) \| 読込 \| 読込 \| SenderAdapter \| S/4標準 \| OdataV4 \| ✓
+- **Row 4:** 販売 \| トランザクション \| 新規 \| HTTP(RestfulAPI) \| マニュアル \| 毎時 \| 差分 \| ReceiverAdapter \| TSV \| SFTP \| 書込 \| 登録 \| ReceiverAdapter \| カスタム \| OdataV2
+- **Row 5:** 購買 \| HTTP(OData) \| イベント \| 毎分 \| 分岐 \| 固定長 \| 削除 \| 変更 \| マッピング \| SOAP
+- **Row 6:** 財務会計 \| RFC \| 日次 \| マッピング \| XML \| その他 \| 削除 \| 分岐 \| BAPI
+- **Row 7:** 固定資産 \| DB接続 \| 週次 \| JSON \| その他 \| Timer \| RestfulAPI
+- **Row 8:** 管理会計 \| メール \| 月次 \| その他 \| フィルタ \| IDOC
+- **Row 9:** 人事 \| SOAP \| 四半期 \| その他プロセス処理 \| その他
+- **Row 10:** 物流 \| IDOC \| 半年毎
+- **Row 11:** 年次
+- **Row 12:** その他
+
+### ①受信側記載要領
+
+- **Row 1:** インタフェースID \| DCTIF007 \| 送信側システム \| 担当者
+- **Row 2:** インタフェース名 \| 伝票明細 \| 受信側システム \| HAISHAくん（集中配車システム） \| 担当者
+- **Row 4:** No. \| Parent Structure \| 項目名 \| 項目ID \| 型 \| サイズ \| キー \| 必須 \| 項目説明 \| 書式 \| 設定値 \| 備考 \| IFマッピング情報 \| トランザクションマッピング情報 \| No. \| Parent Structure \| 項目名 \| 項目ID \| 型 \| サイズ \| キー \| 必須 \| 項目説明 \| 書式 \| 設定値 \| 備考
+- **Row 5:** ※Idocの場合必須 \| 整数 \| 小数 \| バイト数 \| 例 \| 定義 \| No \| 項目名 \| マッピングルール \| No \| 項目グループ \| 項目名（テキスト） \| 項目名 \| テーブル名 \| データタイプ \| 桁数 \| マッピングルール \| ※Idocの場合必須 \| 整数 \| 小数 \| バイト数 \| 例 \| 定義
+- **Row 6:** 1 \| 1 \| 処理日 \| CHAR \| - \| - \| 8 \| ◎ \| ◎ \| 業務日付を設定する。 \| YYYYMMDD \| 20170327
+- **Row 7:** 2 \| 2 \| 依頼番号 \| CHAR \| - \| - \| 9 \| ◎ \| ◎ \| 74562
+- **Row 8:** 3 \| 3 \| 伝票日付 \| CHAR \| - \| - \| 8 \| ◎ \| ◎ \| YYYYMMDD \| 20170327
+- **Row 9:** 4 \| 4 \| 伝票番号 \| CHAR \| - \| - \| 7 \| ◎ \| ◎ \| 5812827
+- **Row 10:** 5 \| 5 \| 伝票番号枝番号 \| CHAR \| - \| - \| 2 \| ◎ \| ◎ \| 00
+- **Row 11:** 6 \| 6 \| 履歴番号 \| CHAR \| - \| - \| 2 \| ◎ \| ◎ \| 03
+- **Row 12:** 7 \| 7 \| 明細番号 \| CHAR \| - \| - \| 2 \| ◎ \| ◎ \| 01
+- **Row 13:** 8 \| 8 \| 商品コード \| CHAR \| - \| - \| 8 \| - \| ◎ \| ※実データは6桁で連携 \| 335204 \| ※IF定義書上は8桁で定義されているが、サンプルデータは6桁となっていたため、実態は6桁。
+- **Row 14:** 9 \| 9 \| 商品名 \| CHAR \| - \| - \| 32 \| - \| - \| キリン午後あたたかミル３４５Ｐ
+- **Row 15:** 10 \| 10 \| 商品分類区分 \| CHAR \| - \| - \| 2 \| - \| - \| 01
+- **Row 16:** 11 \| 11 \| 商品分類区分名称 \| CHAR \| - \| - \| 20 \| - \| - \| 製品
+- **Row 17:** 12 \| 12 \| ケース数 \| CHAR \| - \| - \| 5 \| - \| ◎ \| 64
+- **Row 18:** 13 \| 13 \| バラ数 \| CHAR \| - \| - \| 5 \| - \| ◎ \| 0
+- **Row 19:** 14 \| 14 \| マル特区分 \| CHAR \| - \| - \| 1 \| - \| - \| 0：無効、1：有効（マル特）
+- **Row 29:** 2017/5/18追記：型TIMESTAMPの場合、サイズは未記載とする
+
+### ②トランザクション定義書とのマッピング内容記載要領
+
+- **Row 1:** インタフェースID \| DCTIF007 \| 送信側システム \| 担当者
+- **Row 2:** インタフェース名 \| 伝票明細 \| 受信側システム \| HAISHAくん（集中配車システム） \| 担当者
+- **Row 4:** No. \| Parent Structure \| 項目名 \| 項目ID \| 型 \| サイズ \| キー \| 必須 \| 項目説明 \| 書式 \| 設定値 \| 備考 \| IFマッピング情報 \| トランザクションマッピング情報 \| No. \| Parent Structure \| 項目名 \| 項目ID \| 型 \| サイズ \| キー \| 必須 \| 項目説明 \| 書式 \| 設定値 \| 備考
+- **Row 5:** ※Idocの場合必須 \| 整数 \| 小数 \| バイト数 \| 例 \| 定義 \| No \| 項目名 \| マッピングルール \| No \| 項目グループ \| 項目名（テキスト） \| 項目名 \| テーブル名 \| データタイプ \| 桁数 \| マッピングルール \| ※Idocの場合必須 \| 整数 \| 小数 \| バイト数 \| 例 \| 定義
+- **Row 6:** 1 \| 入出庫伝票ヘッダ \| 転記日付 \| BUDAT \| MKPF \| DATS \| 8 \| 1 \| 処理日 \| CHAR \| - \| - \| 8 \| ◎ \| ◎ \| 業務日付を設定する。 \| YYYYMMDD \| 20170327
+- **Row 7:** 2 \| 入出庫伝票ヘッダ \| 入出庫伝票 \| MBLNR \| MKPF \| CHAR \| 10 \| 先頭1ケタを削除してセット \| 2 \| 依頼番号 \| CHAR \| - \| - \| 9 \| ◎ \| ◎ \| 74562
+- **Row 8:** 3 \| 入出庫伝票ヘッダ \| 伝票日付 \| BLDAT \| MKPF \| DATS \| 8 \| 3 \| 伝票日付 \| CHAR \| - \| - \| 8 \| ◎ \| ◎ \| YYYYMMDD \| 20170327
+- **Row 9:** 4 \| 入出庫伝票ヘッダ \| 入出庫伝票 \| MBLNR \| MKPF \| CHAR \| 10 \| 先頭3ケタを削除してセット \| 4 \| 伝票番号 \| CHAR \| - \| - \| 7 \| ◎ \| ◎ \| 5812827
+- **Row 10:** 5 \| <ブランク> \| 5 \| 伝票番号枝番号 \| CHAR \| - \| - \| 2 \| ◎ \| ◎ \| 00
+- **Row 11:** 6 \| <ブランク> \| 6 \| 履歴番号 \| CHAR \| - \| - \| 2 \| ◎ \| ◎ \| 03
+- **Row 12:** 7 \| 入出庫伝票明細 \| 明細番号 \| ZEILE \| MSEG \| NUMC \| 4 \| 先頭2ケタを削除してセット \| 7 \| 明細番号 \| CHAR \| - \| - \| 2 \| ◎ \| ◎ \| 01
+- **Row 13:** 8 \| 入出庫伝票明細 \| 品目コード \| MATNR \| MSEG \| CHAR \| 40 \| 商品変換テーブルを会社コードと品目コードで検索し抽出された商品コードをセットする。商品コードが抽出されない場合は＜ブランク＞をセット \| 8 \| 商品コード \| CHAR \| - \| - \| 8 \| - \| ◎ \| ※実データは6桁で連携 \| 335204 \| ※IF定義書上は8桁で定義されているが、サンプルデータは6桁となっていたため、実態は6桁。
+- **Row 14:** 9 \| 品目コードより抽出された商品コードで商品変換テーブルより抽出した商品名称をセット。商品コードが抽出されない場合は＜ブランク＞をセット \| 9 \| 商品名 \| CHAR \| - \| - \| 32 \| - \| - \| キリン午後あたたかミル３４５Ｐ
+- **Row 15:** 10 \| 固定値「V」 \| 10 \| 商品分類区分 \| CHAR \| - \| - \| 2 \| - \| - \| 01
+- **Row 16:** 11 \| 固定値「飲料」 \| 11 \| 商品分類区分名称 \| CHAR \| - \| - \| 20 \| - \| - \| 製品
+- **Row 17:** 12 \| 入出庫伝票明細 \| 数量 \| MENGE \| MSEG \| QUAN \| 13 \| IF数量単位変換テーブルを基本数量単位で検索しIF換算係数を取得し、「IF換算係数x数量」の値をセットする \| 12 \| ケース数 \| CHAR \| - \| - \| 5 \| - \| ◎ \| 64
+- **Row 18:** 13 \| 入出庫伝票明細 \| 基本数量単位 \| MEINS \| MSEG \| UNIT \| 3
+- **Row 19:** 14 \| 13 \| バラ数 \| CHAR \| - \| - \| 5 \| - \| ◎ \| 0
+
+## 3. Error Handling Details
+
+### エラー履歴テーブル仕様
+
+- **Row 2:** 出荷リスト海外IF_エラー履歴テーブル(ZSDTHX_0003)
+- **Row 3:** 出荷伝票 \| 明細 \| データ区分 \| メッセージ
+- **Row 4:** 1200000001 \| 10 \| A \| 事業部出荷場所が取得できません。出荷伝票番号　明細番号
+- **Row 5:** 8000000001 \| 10 \| B \| ユーザ会社名が取得できません。出荷伝票番号　明細番号
+- **Row 6:** ※データ区分が"A"(通常エラーデータ)
+- **Row 7:** データ区分が"B"(遅延エラーデータ)
+- **Row 9:** パターン１
+- **Row 10:** 通常処理の場合 \| エラデーターがある場合、エラー履歴テーブルに更新する
+- **Row 12:** パターン２
+- **Row 13:** 再実行の場合 \| ①エラー履歴テーブルから全件データを取得し、再実行対象データとする
+- **Row 14:** ②再実行を処理しているため、処理済データとしてエラー履歴テーブルのデータを全件削除する
+- **Row 15:** ③再実行処理よりエラーがある場合、エラー履歴テーブルに更新する
+
+## 4. Other Design Details
+
+### プロセスフロー
+
+- **Row 1:** IF基本設計書
+- **Row 2:** プロセスフロー \| 凡例
+- **Row 3:** ファイル \| DB・MQ
+- **Row 4:** システム \| ステップ \| Split \| メール \| DataStore \| API \| Event \| メール
+
+### 外部パラメータ定義
+
+- **Row 1:** 外部パラメータ定義
+- **Row 2:** No \| パラメータ \| パラメータ名 \| デフォルト値 \| 説明
+- **Row 3:** 01 \| Prop_Input_reprocessFlag \| 再実行用フラグ \| 差分データを取得することを避けるため、再実行用とする。
+- **Row 4:** 02 \| Ex_DocTypeList \| 出荷伝票タイプ \| 標準出荷(Z100)、海外発送依頼(Z101)、標準無償出荷(Z102)、在庫転送(プラント間)(Z130)、有償材料支給(Z132)、無償材料支給(Z134)
+- **Row 5:** 03 \| Ex_ShippingPointList \| 出荷ポイント \| 有償支給(国内)(1111)、有償支給(外部からBHP)(1113)、本社(1001)
+- **Row 6:** 04 \| Ex_BlockReasonList \| 出荷ブロック \| 'Z7' 、'Z9'
+- **Row 7:** 05 \| Ex_ItemCategory \| 明細カテゴリ \| Z1AA'(仕入先直送) and 'Z1BA'(無償費用 仕入先直送) and 'Z1KA'(無償 仕入先直送) and　'Z1C7'(預託引渡 BOM子) and 'Z1A7'(子BOM)
+- **Row 8:** 06 \| Ex_Plant \| プラント \| 電子管(1001)、HPJ(1006)、固体(1002)、システム(1003)、レーザー(1004) \| v1.03追加
+- **Row 9:** 07 \| Ex_FilePath_etd \| ファイルパス \| /read_only\IF039_SmartCat_OutboundDeliveryList/etd(電子管) \| v1.03追加
+- **Row 10:** 08 \| Ex_FilePath_ssd \| ファイルパス \| /read_only\IF039_SmartCat_OutboundDeliveryList/ssd(固体) \| v1.03追加
+- **Row 11:** 09 \| Ex_FilePath_sys \| ファイルパス \| /read_only\IF039_SmartCat_OutboundDeliveryList/sys(システム) \| v1.03追加
+- **Row 12:** 10 \| Ex_FilePath_lpd \| ファイルパス \| /read_only\IF039_SmartCat_OutboundDeliveryList/lpd(レーザー)
+- **Row 13:** 11
+- **Row 14:** 12
+- **Row 15:** 13
+- **Row 16:** 14
+- **Row 17:** 15
+- **Row 18:** 16
+- **Row 19:** 17
+- **Row 20:** 18
+- **Row 21:** 19
+- **Row 22:** 20
+
+### File定義
+
+- **Row 1:** File定義
+- **Row 2:** No \| 方式 \| ファイル名 \| ファイルパス \| ファイル形式 \| プロトコル \| 文字コード \| その他ファイル仕様
+- **Row 3:** 01 \| 書込 \| 事業部_YYYYMMDD（出庫日）_夜間_国内出荷リスト_success_YYYYMMDDhhmmss.csv<br>※事業部はプラントより決定する<br>etd：電子管(1001)、HPJ(1006)<br>ssd：固体(1002)<br>sys：システム(1003)<br>lpd：レーザー(1004) \| /read_only\IF039_SmartCat_OutboundDeliveryList/etd(電子管)<br>/read_only\IF039_SmartCat_OutboundDeliveryList/ssd(固体)<br>/read_only\IF039_SmartCat_OutboundDeliveryList/sys(システム)<br>/read_only\IF039_SmartCat_OutboundDeliveryList/lpd(レーザー) \| CSV \| SFTP \| Shift-JIS \| 正常処理済用<br>カンマ「,」区切りテキストファイル
+- **Row 4:** 02 \| 書込 \| 営業承認遅延_事業部_YYYYMMDD（出庫日）_夜間_国内出荷リスト_success_YYYYMMDDhhmmss.csv<br>※事業部はプラントより決定する<br>etd：電子管(1001)、HPJ(1006)<br>ssd：固体(1002)<br>sys：システム(1003)<br>lpd：レーザー(1004) \| /read_only\IF039_SmartCat_OutboundDeliveryList/etd(電子管)<br>/read_only\IF039_SmartCat_OutboundDeliveryList/ssd(固体)<br>/read_only\IF039_SmartCat_OutboundDeliveryList/sys(システム)<br>/read_only\IF039_SmartCat_OutboundDeliveryList/lpd(レーザー) \| CSV \| SFTP \| Shift-JIS \| 正常処理済用<br>カンマ「,」区切りテキストファイル
+- **Row 5:** 03 \| 書込 \| 事業部_YYYYMMDD（出庫日）_日中_国内出荷リスト_success_YYYYMMDDhhmmss.csv<br>※事業部はプラントより決定する<br>etd：電子管(1001)、HPJ(1006)<br>ssd：固体(1002)<br>sys：システム(1003)<br>lpd：レーザー(1004) \| /read_only\IF039_SmartCat_OutboundDeliveryList/etd(電子管)<br>/read_only\IF039_SmartCat_OutboundDeliveryList/ssd(固体)<br>/read_only\IF039_SmartCat_OutboundDeliveryList/sys(システム)<br>/read_only\IF039_SmartCat_OutboundDeliveryList/lpd(レーザー) \| CSV \| SFTP \| Shift-JIS \| 正常処理済用<br>カンマ「,」区切りテキストファイル
+- **Row 6:** 04 \| 書込 \| 営業承認遅延_事業部_YYYYMMDD（出庫日）_日中_国内出荷リスト_success_YYYYMMDDhhmmss.csv<br>※事業部はプラントより決定する<br>etd：電子管(1001)、HPJ(1006)<br>ssd：固体(1002)<br>sys：システム(1003)<br>lpd：レーザー(1004) \| /read_only\IF039_SmartCat_OutboundDeliveryList/etd(電子管)<br>/read_only\IF039_SmartCat_OutboundDeliveryList/ssd(固体)<br>/read_only\IF039_SmartCat_OutboundDeliveryList/sys(システム)<br>/read_only\IF039_SmartCat_OutboundDeliveryList/lpd(レーザー) \| CSV \| SFTP \| Shift-JIS \| 正常処理済用<br>カンマ「,」区切りテキストファイル
+- **Row 7:** 05 \| 書込 \| 事業部_YYYYMMDD（出庫日）_夜間_国内出荷リスト_error_YYYYMMDDhhmmss.csv<br>※事業部はプラントより決定する<br>etd：電子管(1001)、HPJ(1006)<br>ssd：固体(1002)<br>sys：システム(1003)<br>lpd：レーザー(1004) \| /read_only\IF039_SmartCat_OutboundDeliveryList/etd(電子管)<br>/read_only\IF039_SmartCat_OutboundDeliveryList/ssd(固体)<br>/read_only\IF039_SmartCat_OutboundDeliveryList/sys(システム)<br>/read_only\IF039_SmartCat_OutboundDeliveryList/lpd(レーザー) \| CSV \| SFTP \| Shift-JIS \| エラー格納用<br>カンマ「,」区切りテキストファイル
+- **Row 8:** 06 \| 書込 \| 営業承認遅延_事業部_YYYYMMDD（出庫日）_夜間_国内出荷リスト_error_YYYYMMDDhhmmss.csv<br>※事業部はプラントより決定する<br>etd：電子管(1001)、HPJ(1006)<br>ssd：固体(1002)<br>sys：システム(1003)<br>lpd：レーザー(1004) \| /read_only\IF039_SmartCat_OutboundDeliveryList/etd(電子管)<br>/read_only\IF039_SmartCat_OutboundDeliveryList/ssd(固体)<br>/read_only\IF039_SmartCat_OutboundDeliveryList/sys(システム)<br>/read_only\IF039_SmartCat_OutboundDeliveryList/lpd(レーザー) \| CSV \| SFTP \| Shift-JIS \| エラー格納用<br>カンマ「,」区切りテキストファイル
+- **Row 9:** 07 \| 書込 \| 事業部_YYYYMMDD（出庫日）_日中_国内出荷リスト_error_YYYYMMDDhhmmss.csv<br>※事業部はプラントより決定する<br>etd：電子管(1001)、HPJ(1006)<br>ssd：固体(1002)<br>sys：システム(1003)<br>lpd：レーザー(1004) \| /read_only\IF039_SmartCat_OutboundDeliveryList/etd(電子管)<br>/read_only\IF039_SmartCat_OutboundDeliveryList/ssd(固体)<br>/read_only\IF039_SmartCat_OutboundDeliveryList/sys(システム)<br>/read_only\IF039_SmartCat_OutboundDeliveryList/lpd(レーザー) \| CSV \| SFTP \| Shift-JIS \| エラー格納用<br>カンマ「,」区切りテキストファイル
+- **Row 10:** 08 \| 書込 \| 営業承認遅延_事業部_YYYYMMDD（出庫日）_日中_国内出荷リスト_error_YYYYMMDDhhmmss.csv<br>※事業部はプラントより決定する<br>etd：電子管(1001)、HPJ(1006)<br>ssd：固体(1002)<br>sys：システム(1003)<br>lpd：レーザー(1004) \| /read_only\IF039_SmartCat_OutboundDeliveryList/etd(電子管)<br>/read_only\IF039_SmartCat_OutboundDeliveryList/ssd(固体)<br>/read_only\IF039_SmartCat_OutboundDeliveryList/sys(システム)<br>/read_only\IF039_SmartCat_OutboundDeliveryList/lpd(レーザー) \| CSV \| SFTP \| Shift-JIS \| エラー格納用<br>カンマ「,」区切りテキストファイル
+- **Row 11:** 09
+- **Row 12:** 10
+- **Row 13:** 11
+- **Row 14:** 12
+- **Row 15:** 13
+- **Row 16:** 14
+- **Row 17:** 15
+- **Row 18:** 16
+- **Row 19:** 17
+- **Row 20:** 18
+- **Row 21:** 19
+- **Row 22:** 20
+- **Row 23:** 21
+- **Row 24:** 22
+- **Row 25:** 22
+- **Row 26:** 23
+
+## 13. Appendix A — Original Excel Data
+
+> This appendix preserves non-empty Excel cells with coordinates so that AI-generated summaries can always be traced back to the source workbook.
+
+### A.1 `IF定義`
+
+- Size: 165 rows × 70 columns
+
+| Cell | Value |
+|---|---|
+| `A1` | IF基本設計書 |
+| `A2` | インタフェース名称 |
+| `F2` | 出荷リスト情報IF |
+| `W2` | インタフェースID |
+| `AB2` | IF039 |
+| `A3` | パッケージ名 |
+| `F3` | HPK_SD_SmartCat |
+| `A4` | インタフェース名 |
+| `F4` | HPK_SD_SmartCat_039_01_S4HANA_to_SmartCat_OutboundDeliveryList |
+| `A5` | 送信元システム |
+| `F5` | RISE S/4 HANA |
+| `W5` | 受信先システム |
+| `AB5` | HPKDB(SFTP) |
+| `A6` | 送信元オブジェクト |
+| `F6` | 出荷伝票、受注伝票、品目マスタ、得意先品目 |
+| `W6` | 受信先オブジェクト |
+| `AB6` | 出荷リスト情報 |
+| `A7` | 起動方法 |
+| `F7` | 時間間隔 |
+| `L7` | 実行サイクル |
+| `Q7` | 毎時 |
+| `W7` | 全件/差分 |
+| `AB7` | 全件 |
+| `AI7` | 月当たりのレコード数 |
+| `AN7` | 75000件 |
+| `A8` | データフロー |
+| `B10` | PRJのIF開発方針に則りDSP(DataSphere)をIFのデータソースとする。 |
+| `B11` | S/4→DSPはアプリ共通チームの開発範囲となるため、本IF要件定義書では言及しない。 |
+| `A30` | 業務要件概要 |
+| `B33` | インタフェース概要 |
+| `C34` | 未出庫の出荷伝票をS/4 HANAから共有フォルダへと出力する。 |
+| `B36` | 前提条件 |
+| `C37` | ・出荷伝票が登録されていること |
+| `B39` | 送信要件 |
+| `C40` | ・実行サイクルは1日2回（昼と夜間）とする。 |
+| `AW40` | 20260217 TIS社指摘対応 |
+| `C41` | ・送信対象に当てはまる出荷伝票とそれに関連する情報を差分（送信済みではないもの）のみ送信する。 |
+| `D42` | 前回実行時刻以降に登録・変更された出荷伝票を抽出する。 |
+| `AW42` | 20260130 差分連携 |
+| `D43` | エラーが発生した場合、同一条件で出荷伝票を再度抽出する。 |
+| `D44` | ※補足：ジョブは2回実行する想定だが、夜間バッチでは全件取得、午後のジョブでは差分連携で取得する。 |
+| `E45` | ・夜間実行の場合、全件のデータを抽出すること。 |
+| `AW45` | 20260217 TIS社指摘対応 |
+| `F46` | IF実行時刻がシステム時刻が01:00以前の場合、夜間実行とする。 |
+| `AW46` | 20260326 TIS社指摘対応 夜間実行の判定を追加 |
+| `E47` | ・昼間実行の場合、前回タイムスタンプより差分のデータを抽出すること。 |
+| `AW47` | 20260217 TIS社指摘対応 |
+| `D49` | ・以下条件で出荷対象の出荷伝票を抽出する。 |
+| `E50` | ・出荷伝票は不完全ではないこと |
+| `E51` | ・出荷明細は不完全ではないこと |
+| `E52` | ・出荷伝票は与信ブロックが設定されていないこと |
+| `E53` | ・出荷伝票はピッキングステータスが未処理または関連なしとなっていること |
+| `AW53` | 20260218 事前ピック作業のため |
+| `E54` | ・出荷伝票に未出庫数量があること |
+| `E55` | ・抽出対象の出荷伝票タイプは、出荷グループが出荷作業をする対象のみとする |
+| `F56` | ・標準出荷 |
+| `F57` | ・海外発送依頼 |
+| `F58` | ・標準無償出荷 |
+| `F59` | ・在庫転送 |
+| `BH59` | 出荷 |
+| `BI59` | 明細 |
+| `BJ59` | 登録日 |
+| `BL59` | 積載日 |
+| `BR59` | 出庫予定日 |
+| `F60` | ・有償材料支給 |
+| `BH60` | 800001 |
+| `BI60` | 10 |
+| `BJ60` | 1/4 |
+| `BL60` | 1/30 |
+| `BO60` | × |
+| `BR60` | 2/4 |
+| `F61` | ・無償材料支給 |
+| `BH61` | 800002 |
+| `BI61` | 10 |
+| `BJ61` | 1/30 |
+| `BL61` | 1/30 |
+| `BO61` | 〇 |
+| `BR61` | 2/5 |
+| `E62` | ・抽出対象の出荷ポイントは出荷グループが出荷作業をする対象のみとする |
+| `BH62` | 800003 |
+| `BJ62` | 1/30 |
+| `BL62` | 1/30 |
+| `BO62` | 〇 |
+| `BR62` | 2/6 |
+| `F63` | 以下は抽出対象外とする。 |
+| `AW63` | 20260217 TIS社指摘対応 出荷ポイントを明記 |
+| `BH63` | 800004 |
+| `BJ63` | 1/30 |
+| `BL63` | 1/30 |
+| `BO63` | 〇 |
+| `BR63` | 2/7 |
+| `F64` | ・有償支給（国内） |
+| `AW64` | 20260217 TIS社指摘対応 出荷ポイントを明記 |
+| `F65` | ・有償支給（外部からBHP） |
+| `AW65` | 20260217 TIS社指摘対応 出荷ポイントを明記 |
+| `F66` | ・本社 |
+| `AW66` | 20260217 TIS社指摘対応 出荷ポイントを明記 |
+| `F67` | ・HPJ |
+| `AW67` | 20260217 TIS社指摘対応 出荷ポイントを明記 |
+| `BF67` | 20260730 削除 変更管理#30881 |
+| `E68` | ・BOM子および仕入先直送の明細カテゴリは除外する。 |
+| `E69` | 以下の実行条件で抽出する。 |
+| `AW69` | 20260226 営業承認遅延対応 |
+| `F70` | ・積載日が本日の出荷伝票のみを抽出する。 |
+| `AW70` | 20260226 営業承認遅延対応 |
+| `F71` | ・登録日が昨日かつ積載日が過去の伝票全てを抽出する。 |
+| `AW71` | 20260226 営業承認遅延対応 |
+| `BH71` | 登録時刻＞ |
+| `BJ71` | 1/29 |
+| `E72` | ・出荷ブロックがブランクとなっている、または二段階目の出荷ブロック（Z7,Z9）が設定されている出荷伝票は抽出対象外とする。 |
+| `AW72` | 20260306 TIS社指摘対応 |
+| `B74` | 受信要件 |
+| `B75` | ・事業部毎および出庫日毎および通常/営業承認遅延毎にファイルを分ける |
+| `AW75` | 20260226 営業承認遅延対応 |
+| `B76` | ・海外の場合、上記に含め受注先毎にファイルを分ける |
+| `B77` | ・国内/海外で異なる項目を出力する |
+| `C78` | 国内はシート「マッピング定義（国内）」を参照 |
+| `C79` | 海外はシート「マッピング定義（海外）」を参照 |
+| `B80` | ・国内のレコードは以下項目の通り、降順でソートする。 |
+| `AW80` | 20260210 ソート順の追加 |
+| `C81` | 出荷ポイント |
+| `C82` | 出庫日 |
+| `C83` | 伝票タイプ |
+| `D84` | 海外発送依頼/有償材料支給/無償材料支給はファイルの最後に出力する |
+| `C85` | 届け先カナ名 |
+| `C86` | 届け先BPコード |
+| `D87` | ※カナ名については得意先マスタ「検索語句1」を使用するため、記号、英数字、アルファベット順、ひらがな、カナ、漢字の降順でソートする。 |
+| `B88` | ・海外のレコードは以下項目の通り、降順でソートする。 |
+| `C89` | 出荷ポイント |
+| `C90` | 出庫日 |
+| `C91` | 伝票タイプ |
+| `D92` | 海外発送依頼/有償材料支給/無償材料支給はファイルの最後に出力する |
+| `C93` | 届け先カナ名 |
+| `C94` | 届け先BPコード |
+| `C95` | 計画集計対象カナ名 |
+| `C96` | 計画集計対象BPコード |
+| `D97` | ※カナ名については得意先マスタ「検索語句1」を使用するため、記号、英数字、アルファベット順、ひらがな、カナ、漢字の降順でソートする。 |
+| `B99` | プロセス |
+| `C100` | (1) S/4 から送信対象の出荷伝票や必要な関連情報を抽出する。 |
+| `C101` | (2) Cloud Integrationよりフォーマット変換を行う。 |
+| `D102` | 出力ファイルへの項目マッピング |
+| `E103` | 出荷伝票ヘッダの仕向国がJPの場合、マッピング定義（国内）の項目マッピング通りに出力する。 |
+| `E104` | 出荷伝票ヘッダの仕向国がJP以外の場合、マッピング定義（海外）の項目マッピング通りに出力する。 |
+| `D106` | 1. |
+| `E106` | 以下特別な変換が必要となる項目について記載する。 |
+| `E107` | コード値ではなく、テキスト（名称など）を出力する際に取得できなかった場合やブランクで返ってきた場合、 |
+| `E108` | テキストデータ取得エラーとする。エラーとなった場合、実行単位でエラーとする。 |
+| `E109` | 但し、エラーとなった場合でも、一度全処理を通し、発生したエラーメッセージ全てと共にエラーファイルとして出力する。 |
+| `E110` | ※その他必要となるチェックロジックは設計時に追加とする。 |
+| `E111` | 1.1. |
+| `G111` | 受注区分 |
+| `G112` | 出荷タイプに応じて取得元を変更する。 |
+| `G113` | 出荷タイプが在庫転送の場合、購買発注伝票の購買発注タイプのテキストを出力する。 |
+| `G114` | 出荷タイプがそれ以外の場合、受注伝票の受注タイプのテキストを出力する。 |
+| `E115` | 1.2. |
+| `G115` | 受注先名称 |
+| `G116` | 受注先が現法の場合、略称を出力する。 |
+| `H117` | 得意先マスタ（一般データ）の項目「取引先コード」に値が入っているかつ仕向国がJP以外の場合、 |
+| `H118` | 得意先マスタ（一般データ）の項目「検索語句1」の値を受注先名称に格納する。 |
+| `G119` | 現法以外の場合、名称1および名称2を結合し、出力する。 |
+| `E120` | 1.3. |
+| `G120` | 住所情報の結合 |
+| `G121` | 以下項目を結合し、項目「届出先住所」に格納する。 |
+| `H122` | ・市区町村 |
+| `H123` | ・都道府県 |
+| `H124` | ・地名2 |
+| `H125` | ・地名3 |
+| `H126` | ・地名4 |
+| `H127` | ・地名5 |
+| `E128` | 1.4. |
+| `G128` | 社外型名の取得 |
+| `G129` | 追加得意先品目コードを取得できた場合、値を項目「社外型名」に格納する。 |
+| `G130` | 追加得意先品目コードが無かった場合、製品DB型名を格納する。 |
+| `G131` | 製品DB型名が無かった場合、明細テキストを格納する。 |
+| `E132` | 1.5. |
+| `G132` | 各種伝票番号 |
+| `G133` | 出荷伝票・参照伝票番号は明細番号と繋げて出力する。 |
+| `H134` | 例 |
+| `H135` | 出荷伝票 |
+| `K135` | 出荷明細番号 |
+| `V135` | 出荷伝票 |
+| `H136` | 800001 |
+| `K136` | 10 |
+| `V136` | 800001-10 |
+| `E137` | 1.6. |
+| `G137` | 出荷指図のテキスト |
+| `G138` | ヘッダと明細で各々出荷指示のテキストを保持しているが、繋げて項目「摘要欄」として保持する。 |
+| `C140` | (3)共有フォルダにファイルを配置する。 |
+| `C141` | (4)エラーハンドリング |
+| `D142` | エラーとなったレコードは事業部単位で異なるファイルでエラーファイルとして格納する。 |
+| `D143` | チェックエラーとなった場合、実行単位でエラーとする。 |
+| `D144` | 再実行時には前回抽出時と同様な伝票を指定できること。 |
+| `D145` | 再実行時にはエラーとなった伝票を指定できること。 |
+| `D146` | エラーが発生した場合、業務ユーザ宛にメール通知を出力する。 |
+| `E147` | ◆電子管出荷Ｇ（27名）　→ |
+| `N147` | HPKLDAP-10330all@internal.hpk.co.jp |
+| `E148` | ◆固体出荷Ｇ（18名）　→ |
+| `N148` | HPKLDAP-10340all@internal.hpk.co.jp |
+| `E149` | ◆システム出荷Ｇ（8名）　→ |
+| `N149` | HPKLDAP-10350all@internal.hpk.co.jp |
+| `E150` | ◆レーザー出荷Ｇ（5名）　→ |
+| `N150` | HPKLDAP-10360all@internal.hpk.co.jp |
+| `B152` | パフォーマンス要件 |
+| `B156` | その他補足 |
+| `C157` | マッピング定義 受信側の項目名をヘッダとしてファイル1行目に出力する。 |
+| `C158` | 出力時全項目をフラットファイルとして出力する（ヘッダ・明細・その他項目を1行で保持する） |
+| `A160` | 技術詳細 |
+| `A161` | 標準テンプレート |
+| `A162` | パッケージ |
+| `A163` | Artifacts |
+| `A164` | パラメータ |
+| `A165` | 起動url |
+| `F165` | /039/01 |
+
+### A.2 `マッピング定義（海外）`
+
+- Size: 56 rows × 81 columns
+
+| Cell | Value |
+|---|---|
+| `A1` | 送信側 |
+| `L1` | 受信側 |
+| `V1` | 変換 |
+| `X1` | 備考 |
+| `Y1` | SAPメモ<br>最終化前に削除 |
+| `A2` | No. |
+| `B2` | マスタ/トランザクション<br>ファイル |
+| `D2` | 構造<br>(タブ/カテゴリ) |
+| `E2` | 項目名 |
+| `F2` | 属性 |
+| `J2` | API |
+| `L2` | No. |
+| `M2` | マスタ/トランザクション<br>ファイル |
+| `N2` | 構造<br>(タブ/カテゴリ) |
+| `O2` | 項目名 |
+| `P2` | 属性 |
+| `T2` | API |
+| `V2` | 変換仕様 |
+| `W2` | データサンプル |
+| `F3` | 必須 |
+| `G3` | 型 |
+| `H3` | 長さ |
+| `I3` | 小数 |
+| `J3` | エンティティ/構造 |
+| `K3` | 項目名 |
+| `P3` | 必須 |
+| `Q3` | 型 |
+| `R3` | 長さ |
+| `S3` | 小数 |
+| `T3` | エンティティ/構造 |
+| `U3` | 項目名 |
+| `A4` | =ROW()-3 |
+| `B4` | 出荷伝票 |
+| `C4` | LIKP |
+| `D4` | ヘッダ |
+| `E4` | 出荷ポイント |
+| `G4` | CHAR |
+| `H4` | 4 |
+| `J4` | ILEDELIVDOC(I_DeliveryDocument) |
+| `K4` | SHIPPINGPOINT |
+| `L4` | 1 |
+| `M4` | 出荷リスト情報 |
+| `O4` | 出荷場所 |
+| `Q4` | CHAR |
+| `T4` | - |
+| `U4` | - |
+| `W4` | 1201 |
+| `A5` | =ROW()-3 |
+| `B5` | 出荷伝票 |
+| `C5` | LIPS |
+| `D5` | 明細/先行データ/受注 |
+| `E5` | 参照伝票番号 |
+| `G5` | CHAR |
+| `H5` | 10 |
+| `J5` | ILEDELIVDOCITEM(I_DeliveryDocumentItem) |
+| `K5` | REFERENCESDDOCUMENT |
+| `L5` | 2 |
+| `M5` | 出荷リスト情報 |
+| `O5` | 受注No. |
+| `Q5` | CHAR |
+| `T5` | - |
+| `U5` | - |
+| `V5` | 項目結合 |
+| `W5` | 10000000-10 |
+| `X5` | 参照伝票番号、ハイフン、明細番号を繋げる |
+| `A6` | =ROW()-3 |
+| `B6` | 出荷伝票 |
+| `C6` | LIPS |
+| `D6` | 明細/先行データ/受注 |
+| `E6` | 参照明細番号 |
+| `G6` | CHAR |
+| `H6` | 6 |
+| `J6` | ILEDELIVDOCITEM(I_DeliveryDocumentItem) |
+| `K6` | REFERENCESDDOCUMENTITEM |
+| `M6` | 出荷リスト情報 |
+| `T6` | - |
+| `U6` | - |
+| `A7` | =ROW()-3 |
+| `B7` | 出荷伝票 |
+| `C7` | LIKP |
+| `D7` | ヘッダ |
+| `E7` | 出荷伝票番号 |
+| `G7` | CHAR |
+| `H7` | 10 |
+| `J7` | ILEDELIVDOC(I_DeliveryDocument) |
+| `K7` | DELIVERYDOCUMENT |
+| `L7` | 3 |
+| `M7` | 出荷リスト情報 |
+| `O7` | 出荷No. |
+| `Q7` | CHAR |
+| `T7` | - |
+| `U7` | - |
+| `V7` | 項目結合 |
+| `W7` | 80001060-10 |
+| `X7` | 出荷伝票番号、ハイフン、明細番号を繋げる |
+| `A8` | =ROW()-3 |
+| `B8` | 出荷伝票 |
+| `C8` | LIPS |
+| `D8` | 明細 |
+| `E8` | 出荷明細番号 |
+| `G8` | CHAR |
+| `H8` | 6 |
+| `J8` | ILEDELIVDOCITEM(I_DeliveryDocumentItem) |
+| `K8` | DELIVERYDOCUMENTITEM |
+| `M8` | 出荷リスト情報 |
+| `T8` | - |
+| `U8` | - |
+| `V8` | 項目結合 |
+| `X8` | 出荷伝票番号、ハイフン、明細番号を繋げる |
+| `A9` | =ROW()-3 |
+| `B9` | 受注伝票 |
+| `C9` | TVAKT |
+| `D9` | ヘッダ |
+| `E9` | 伝票タイプテキスト |
+| `G9` | CHAR |
+| `H9` | 20 |
+| `J9` | ISDSALESDOCTYPET(I_SalesDocumentTypeText) |
+| `K9` | SALESDOCUMENTTYPENAME |
+| `L9` | 4 |
+| `M9` | 出荷リスト情報 |
+| `O9` | 受注方法 |
+| `T9` | - |
+| `U9` | - |
+| `V9` | 有 |
+| `W9` | 標準受注 |
+| `X9` | コード値ではなく、テキスト<br>出荷タイプが在庫転送以外の場合、当項目を出力する。 |
+| `A10` | =ROW()-3 |
+| `B10` | 購買発注 |
+| `C10` | T024 |
+| `D10` | ヘッダ |
+| `E10` | 伝票タイプテキスト |
+| `G10` | CHAR |
+| `H10` | 20 |
+| `J10` | IMMPURGDOCTYPTXT(I_PurchasingDocumentTypeText) |
+| `K10` | PURCHASINGDOCUMENTTYPENAME |
+| `M10` | 出荷リスト情報 |
+| `T10` | - |
+| `U10` | - |
+| `V10` | 有 |
+| `W10` | プラント間在庫転送 |
+| `X10` | コード値ではなく、テキスト<br>出荷タイプが在庫転送の場合、当項目を出力する。<br>※購買参照の出荷タイプ「Z130」在庫転送、「Z134」無償材料支給 |
+| `A11` | =ROW()-3 |
+| `B11` | 出荷伝票 |
+| `C11` | LIKP |
+| `D11` | ヘッダ/パートナ/受注先 |
+| `E11` | 受注先 |
+| `G11` | CHAR |
+| `H11` | 10 |
+| `J11` | ILEDELIVDOC(I_DeliveryDocument) |
+| `K11` | SOLDTOPARTY |
+| `L11` | 5 |
+| `M11` | 出荷リスト情報 |
+| `O11` | 受注先コード |
+| `Q11` | CHAR |
+| `T11` | - |
+| `U11` | - |
+| `W11` | 1000000001 |
+| `A12` | =ROW()-3 |
+| `B12` | 出荷伝票 |
+| `C12` | ADRC |
+| `D12` | ヘッダ/パートナ/受注先 |
+| `E12` | 名称1 |
+| `G12` | CHAR |
+| `H12` | 40 |
+| `J12` | - |
+| `K12` | - |
+| `L12` | 6 |
+| `M12` | 出荷リスト情報 |
+| `O12` | 受注先会社名 |
+| `Q12` | CHAR |
+| `T12` | - |
+| `U12` | - |
+| `V12` | 項目結合 |
+| `W12` | HAMAMATSU CORPORATION |
+| `X12` | 現法以外の場合、名称1,名称2を結合する。<br>現法の場合、略称とするため検索語句 1から取得する。 |
+| `A13` | =ROW()-3 |
+| `B13` | 出荷伝票 |
+| `C13` | ADRC |
+| `D13` | ヘッダ/パートナ/受注先 |
+| `E13` | 名称2 |
+| `G13` | CHAR |
+| `H13` | 40 |
+| `J13` | - |
+| `K13` | - |
+| `M13` | 出荷リスト情報 |
+| `T13` | - |
+| `U13` | - |
+| `V13` | 項目結合 |
+| `A14` | =ROW()-3 |
+| `B14` | 得意先マスタ |
+| `C14` | BUT000 |
+| `D14` | 得意先（一般） |
+| `E14` | 検索語句 1 |
+| `G14` | CHAR |
+| `H14` | 20 |
+| `J14` | I_BusinessPartner |
+| `K14` | SEARCHTERM1 |
+| `M14` | 出荷リスト情報 |
+| `T14` | - |
+| `U14` | - |
+| `V14` | 有 |
+| `W14` | HC |
+| `X14` | 現法の場合、略称とする際の取得元項目。 |
+| `A15` | =ROW()-3 |
+| `B15` | 出荷伝票 |
+| `C15` | ADRC |
+| `D15` | ヘッダ/パートナ/計画集計対象 |
+| `E15` | 名称1 |
+| `G15` | CHAR |
+| `H15` | 40 |
+| `J15` | =-[7]表紙!A2 |
+| `K15` | - |
+| `L15` | 7 |
+| `M15` | 出荷リスト情報 |
+| `O15` | ユーザ会社名 |
+| `Q15` | CHAR |
+| `T15` | - |
+| `U15` | - |
+| `V15` | 項目結合 |
+| `W15` | HAMAMATSU CORPORATION |
+| `X15` | 現法以外の場合、名称1,名称2を結合する。<br>現法の場合、略称とするため検索語句 1から取得する。 |
+| `A16` | =ROW()-3 |
+| `B16` | 出荷伝票 |
+| `C16` | ADRC |
+| `D16` | ヘッダ/パートナ/計画集計対象 |
+| `E16` | 名称2 |
+| `G16` | CHAR |
+| `H16` | 40 |
+| `J16` | - |
+| `K16` | - |
+| `M16` | 出荷リスト情報 |
+| `T16` | - |
+| `U16` | - |
+| `V16` | 項目結合 |
+| `A17` | =ROW()-3 |
+| `B17` | 得意先マスタ |
+| `C17` | BUT000 |
+| `D17` | 得意先（一般） |
+| `E17` | 検索語句 1 |
+| `G17` | CHAR |
+| `H17` | 20 |
+| `J17` | I_BusinessPartner |
+| `K17` | SEARCHTERM1 |
+| `M17` | 出荷リスト情報 |
+| `T17` | - |
+| `U17` | - |
+| `V17` | 有 |
+| `W17` | HC |
+| `X17` | 現法の場合、略称とする際の取得元項目。 |
+| `A18` | =ROW()-3 |
+| `B18` | 出荷伝票 |
+| `C18` | ADRC |
+| `D18` | ヘッダ/パートナ/出荷先 |
+| `E18` | 名称1 |
+| `G18` | CHAR |
+| `H18` | 40 |
+| `J18` | - |
+| `K18` | - |
+| `L18` | 8 |
+| `M18` | 出荷リスト情報 |
+| `O18` | 届出先会社名 |
+| `Q18` | CHAR |
+| `T18` | - |
+| `U18` | - |
+| `V18` | 項目結合 |
+| `W18` | HAMAMATSU CORPORATION |
+| `X18` | 現法以外の場合、名称1,名称2を結合する。<br>現法の場合、略称とするため検索語句 1から取得する。 |
+| `A19` | =ROW()-3 |
+| `B19` | 出荷伝票 |
+| `C19` | ADRC |
+| `D19` | ヘッダ/パートナ/出荷先 |
+| `E19` | 名称2 |
+| `G19` | CHAR |
+| `H19` | 40 |
+| `J19` | - |
+| `K19` | - |
+| `M19` | 出荷リスト情報 |
+| `T19` | - |
+| `U19` | - |
+| `V19` | 項目結合 |
+| `A20` | =ROW()-3 |
+| `B20` | 得意先マスタ |
+| `C20` | BUT000 |
+| `D20` | 得意先（一般） |
+| `E20` | 検索語句 1 |
+| `G20` | CHAR |
+| `H20` | 20 |
+| `J20` | I_BusinessPartner |
+| `K20` | SEARCHTERM1 |
+| `M20` | 出荷リスト情報 |
+| `T20` | - |
+| `U20` | - |
+| `V20` | 有 |
+| `W20` | HC |
+| `X20` | 現法の場合、略称とする際の取得元項目。 |
+| `A21` | =ROW()-3 |
+| `B21` | 出荷伝票 |
+| `D21` | 明細/シップメント/シップメント |
+| `E21` | インコタームズ |
+| `G21` | CHAR |
+| `H21` | 3 |
+| `J21` | ILEDELIVDOC(I_DeliveryDocument) |
+| `K21` | IncotermsClassification |
+| `L21` | 9 |
+| `M21` | 出荷リスト情報 |
+| `O21` | インコタームズ |
+| `Q21` | CHAR |
+| `T21` | - |
+| `U21` | - |
+| `W21` | CIP |
+| `A22` | =ROW()-3 |
+| `B22` | 受注伝票 |
+| `C22` | VBAP |
+| `D22` | ヘッダ/発注データ/受注先 |
+| `E22` | 得意先参照 |
+| `G22` | CHAR |
+| `H22` | 35 |
+| `J22` | CSDSLSDOCITMDX1(C_SalesDocumentItemDEX_1) |
+| `K22` | PURCHASEORDERBYCUSTOMER |
+| `L22` | 10 |
+| `M22` | 出荷リスト情報 |
+| `O22` | 注文番号 |
+| `Q22` | CHAR |
+| `T22` | - |
+| `U22` | - |
+| `W22` | 4512323644 |
+| `X22` | 出荷タイプが在庫転送の場合、不要 |
+| `A23` | =ROW()-3 |
+| `B23` | 品目マスタ |
+| `C23` | MARA |
+| `D23` | 基本データ |
+| `E23` | 責任原価センタ（製造） |
+| `G23` | CHAR |
+| `H23` | 10 |
+| `J23` | IPRODUCT(I_Product) |
+| `K23` | ZZ1_COSTC_MANUz2_PRD |
+| `L23` | 11 |
+| `M23` | 出荷リスト情報 |
+| `O23` | 経費コード |
+| `Q23` | CHAR |
+| `T23` | - |
+| `U23` | - |
+| `W23` | 1000010000 |
+| `A24` | =ROW()-3 |
+| `B24` | 出荷伝票 |
+| `C24` | LIPS |
+| `D24` | 明細/品目 |
+| `E24` | 明細テキスト |
+| `G24` | CHAR |
+| `H24` | 40 |
+| `J24` | ILEDELIVDOCITEM(I_DeliveryDocumentItem) |
+| `K24` | DELIVERYDOCUMENTITEMTEXT |
+| `L24` | 12 |
+| `M24` | 出荷リスト情報 |
+| `O24` | 社内型名 |
+| `Q24` | CHAR |
+| `T24` | - |
+| `U24` | - |
+| `W24` | L9181-05/Ver01 |
+| `A25` | =ROW()-3 |
+| `B25` | 得意先品目情報 |
+| `C25` | KNMTA |
+| `D25` | 得意先品目/追加得意先品目 |
+| `E25` | 追加得意先品目コード |
+| `G25` | CHAR |
+| `H25` | 35 |
+| `J25` | KNMT_KNMTA(新規CDS（Z*）) |
+| `K25` | KNMTA_MATERIALBYCUSTOMER |
+| `L25` | 13 |
+| `M25` | 出荷リスト情報 |
+| `O25` | 社外型名 |
+| `V25` | 有 |
+| `W25` | L9100 |
+| `X25` | 追加得意先品目コードが無かった場合、製品DB型名を格納する。<br>製品DB型名が無かった場合、明細テキストを格納する。 |
+| `A26` | =ROW()-3 |
+| `B26` | 品目マスタ |
+| `C26` | MARA |
+| `D26` | 拡張項目 |
+| `E26` | 製品DB型名 |
+| `G26` | CHAR |
+| `J26` | IPRODUCT(I_Product) |
+| `K26` | ZZ1_DB_Name_PRD_PRD |
+| `V26` | 有 |
+| `A27` | =ROW()-3 |
+| `B27` | 出荷伝票 |
+| `C27` | LIPS |
+| `D27` | 明細/品目 |
+| `E27` | 明細テキスト |
+| `G27` | CHAR |
+| `H27` | 40 |
+| `J27` | ILEDELIVDOCITEM(I_DeliveryDocumentItem) |
+| `K27` | DELIVERYDOCUMENTITEMTEXT |
+| `V27` | 有 |
+| `A28` | =ROW()-3 |
+| `B28` | 出荷伝票 |
+| `C28` | LIPS |
+| `D28` | 明細/ピッキング |
+| `E28` | 出荷数量 |
+| `G28` | QUAN |
+| `H28` | 13 |
+| `J28` | ILEDELIVDOCITEM(I_DeliveryDocumentItem) |
+| `K28` | ACTUALDELIVERYQUANTITY |
+| `L28` | 14 |
+| `M28` | 出荷リスト情報 |
+| `O28` | 数量 |
+| `Q28` | QUAN |
+| `T28` | - |
+| `U28` | - |
+| `W28` | 10.000 |
+| `A29` | =ROW()-3 |
+| `B29` | 出荷伝票 |
+| `C29` | TVM1T |
+| `D29` | 明細 |
+| `E29` | 品目Grp1 |
+| `G29` | CHAR |
+| `H29` | 20 |
+| `J29` | ISDADDLMATLGRP1T(I_AdditionalMaterialGroup1Text) |
+| `K29` | ADDITIONALMATERIALGROUP1NAME |
+| `L29` | 15 |
+| `M29` | 出荷リスト情報 |
+| `O29` | 該非-輸出令 |
+| `Q29` | CHAR |
+| `T29` | - |
+| `U29` | - |
+| `V29` | 有 |
+| `W29` | 該当 |
+| `X29` | コード値ではなく、テキスト |
+| `A30` | =ROW()-3 |
+| `B30` | 出荷伝票 |
+| `C30` | LIKP |
+| `D30` | ヘッダ/処理 |
+| `E30` | 出庫予定日 |
+| `G30` | DATS |
+| `H30` | 8 |
+| `J30` | ILEDELIVDOC(I_DeliveryDocument) |
+| `K30` | PLANNEDGOODSISSUEDATE |
+| `L30` | 16 |
+| `M30` | 出荷リスト情報 |
+| `O30` | 出荷日 |
+| `Q30` | CHAR |
+| `T30` | - |
+| `U30` | - |
+| `W30` | 2025.06.17 |
+| `A31` | =ROW()-3 |
+| `B31` | 出荷伝票 |
+| `C31` | STXH |
+| `D31` | ヘッダ/テキスト |
+| `E31` | ロングテキスト-出荷指図 |
+| `J31` | ZSDTLX_0001 |
+| `K31` | TEXT |
+| `L31` | 17 |
+| `M31` | 出荷リスト情報 |
+| `O31` | 摘要欄 |
+| `Q31` | CHAR |
+| `T31` | - |
+| `U31` | - |
+| `W31` | INVOICE P/L作成 |
+| `X31` | テキストIDはZ108、言語はJAの出荷指図(ヘッダ)データ |
+| `Y31` | 20260218 項目結合削除 |
+| `A32` | =ROW()-3 |
+| `B32` | 出荷伝票 |
+| `C32` | STXH |
+| `D32` | 明細/テキスト |
+| `E32` | ロングテキスト-出荷指図 |
+| `J32` | ZSDTLX_0002 |
+| `K32` | TEXT |
+| `M32` | 出荷リスト情報 |
+| `O32` | 摘要欄 |
+| `Q32` | CHAR |
+| `T32` | - |
+| `U32` | - |
+| `W32` | 納品書同梱 |
+| `X32` | テキストIDはZ202、言語はJAの出荷指図(明細)データ |
+| `Y32` | 20260218 項目結合削除 |
+| `A33` | =ROW()-3 |
+| `B33` | 出荷伝票 |
+| `C33` | STXH |
+| `D33` | 明細/テキスト |
+| `E33` | ロングテキスト-規制関連情報 |
+| `J33` | ZSDTLX_0002 |
+| `K33` | TEXT |
+| `L33` | 18 |
+| `M33` | 出荷リスト情報 |
+| `O33` | 規制関連情報 |
+| `Q33` | CHAR |
+| `T33` | - |
+| `U33` | - |
+| `W33` | HG MG <0.1 wt%<br>WEEE |
+| `X33` | 但し、規制関連情報全てが出力される<br>※テキストIDはZ200、言語はID(インドネシア語)の規制関連情報データ |
+| `A34` | =ROW()-3 |
+| `B34` | 受注伝票 |
+| `C34` | ADRP |
+| `D34` | ヘッダ/受注管理 |
+| `E34` | 姓 |
+| `G34` | CHAR |
+| `H34` | 12 |
+| `J34` | PerPersonal(IF_PerPersona) |
+| `K34` | businessLastName |
+| `L34` | 19 |
+| `M34` | 出荷リスト情報 |
+| `O34` | 受注伝票発行者 |
+| `Q34` | CHAR |
+| `T34` | - |
+| `U34` | - |
+| `V34` | 有 |
+| `W34` | 草野 大輝 |
+| `X34` | コード値ではなく、テキスト<br>出荷タイプが在庫転送以外の場合、当項目を出力する。<br>姓と名の間に半角スペースを入力し、項目結合する。 |
+| `A35` | =ROW()-3 |
+| `B35` | 受注伝票 |
+| `C35` | ADRP |
+| `D35` | ヘッダ/受注管理 |
+| `E35` | 名 |
+| `G35` | CHAR |
+| `H35` | 12 |
+| `J35` | PerPersonal(IF_PerPersona) |
+| `K35` | businessFirstName |
+| `V35` | 有 |
+| `X35` | コード値ではなく、テキスト<br>出荷タイプが在庫転送以外の場合、当項目を出力する。<br>姓と名の間に半角スペースを入力し、項目結合する。 |
+| `A36` | =ROW()-3 |
+| `B36` | 在庫転送 |
+| `C36` | T024 |
+| `D36` | ヘッダ |
+| `E36` | 購買グループテキスト |
+| `G36` | CHAR |
+| `H36` | 18 |
+| `J36` | IMMPURCHGROUP(I_PURCHASINGGROUP) |
+| `K36` | PURCHASINGGROUPNAME |
+| `T36` | - |
+| `U36` | - |
+| `V36` | 有 |
+| `W36` | 電子管（自動） |
+| `X36` | コード値ではなく、テキスト<br>出荷タイプが在庫転送の場合、当項目を出力する。 |
+| `B38` | 以下チェックロジックおよび項目取得用 |
+| `A39` | =ROW()-34 |
+| `B39` | 出荷伝票 |
+| `C39` | LIPS |
+| `D39` | 明細 |
+| `E39` | 明細カテゴリ |
+| `G39` | CHAR |
+| `H39` | 9 |
+| `J39` | ILEDELIVDOCITEM(I_DeliveryDocumentItem) |
+| `K39` | DELIVERYDOCUMENTITEMCATEGORY |
+| `T39` | - |
+| `U39` | - |
+| `X39` | 明細カテゴリが「BOM子」の場合、対象の出荷明細は処理対象外とする。<br>明細カテゴリが「非在庫品」の場合、品目グループを確認する。 |
+| `A40` | =ROW()-34 |
+| `B40` | 出荷伝票 |
+| `C40` | LIKP |
+| `D40` | ヘッダ/管理 |
+| `E40` | 出荷ブロック |
+| `G40` | CHAR |
+| `H40` | 9 |
+| `J40` | ILEDELIVDOC(I_DeliveryDocument) |
+| `K40` | DELIVERYBLOCKREASON |
+| `T40` | - |
+| `U40` | - |
+| `X40` | 出荷審査完了済みの明細は処理対象外とする。 |
+| `A41` | =ROW()-34 |
+| `B41` | 出荷伝票 |
+| `C41` | LIPS |
+| `D41` | 明細 |
+| `E41` | 品目グループ |
+| `G41` | CHAR |
+| `H41` | 9 |
+| `J41` | ILEDELIVDOCITEM(I_DeliveryDocumentItem) |
+| `K41` | PRODUCTGROUP |
+| `T41` | - |
+| `U41` | - |
+| `X41` | 「サービス品」または「移転価格」の場合、対象の出荷明細は処理対象外とする。 |
+| `A42` | =ROW()-34 |
+| `B42` | 出荷伝票 |
+| `C42` | VBPA |
+| `D42` | 取引先機能 |
+| `E42` | 国/地域 |
+| `G42` | CHAR |
+| `H42` | 3 |
+| `J42` | ZI_SD_SalesDoctPartner |
+| `K42` | US_FRGNACCTTAXRCPNTCNTRY |
+| `L42` | 5 |
+| `M42` | 出荷リスト情報 |
+| `O42` | 受注先会社名 |
+| `T42` | - |
+| `U42` | - |
+| `V42` | 有 |
+| `W42` | HAMAMATSU CORPORATION |
+| `X42` | 取引先コードに値があった場合、かつ出荷先の仕向国がJP以外だった場合、受注先・出荷先・計画集計対象の名称を検索語句 1から取得する。 |
+| `A43` | =ROW()-34 |
+| `B43` | 得意先マスタ |
+| `C43` | VBPA |
+| `D43` | 得意先（一般）/制御データ |
+| `E43` | 取引先コード |
+| `G43` | CHAR |
+| `H43` | 6 |
+| `J43` | ZI_SD_SalesDoctPartner |
+| `K43` | CUSTOMER |
+| `L43` | 5 |
+| `M43` | 出荷リスト情報 |
+| `O43` | 受注先会社名 |
+| `T43` | - |
+| `U43` | - |
+| `V43` | 有 |
+| `W43` | HAMAMATSU CORPORATION |
+| `X43` | 取引先コードに値があった場合、かつ出荷先の仕向国がJP以外だった場合、受注先・出荷先・計画集計対象の名称を検索語句 1から取得する。 |
+| `A44` | =ROW()-34 |
+| `B44` | 出荷伝票 |
+| `C44` | LIKP |
+| `D44` | ヘッダ |
+| `E44` | プラント |
+| `G44` | CHAR |
+| `H44` | 4 |
+| `J44` | ILEDELIVDOC(I_DeliveryDocument) |
+| `K44` | RECEIVINGPLANT |
+| `T44` | - |
+| `U44` | - |
+| `X44` | 出荷ポイント毎にファイルを分けるために使用する。 |
+| `A45` | =ROW()-34 |
+| `B45` | 出荷伝票 |
+| `C45` | LIKP |
+| `D45` | ヘッダ |
+| `E45` | 伝票タイプ |
+| `G45` | CHAR |
+| `H45` | 4 |
+| `J45` | ILEDELIVDOC(I_DeliveryDocument) |
+| `K45` | DELIVERYDOCUMENTTYPE |
+| `L45` | 3 |
+| `M45` | 出荷リスト情報 |
+| `O45` | 受注方法 |
+| `T45` | - |
+| `U45` | - |
+| `V45` | 有 |
+| `W45` | 標準受注 |
+| `X45` | 在庫転送の場合、在庫転送以外の場合で出力項目を振り分けるために使用する。 |
+| `A46` | =ROW()-34 |
+| `B46` | 受注伝票 |
+| `C46` | VBAK |
+| `D46` | ヘッダ |
+| `E46` | 伝票タイプ |
+| `G46` | CHAR |
+| `H46` | 4 |
+| `J46` | CSDSLSDOCITMDX1(C_SalesDocumentItemDEX_1) |
+| `K46` | SALESDOCUMENTTYPE |
+| `L46` | 3 |
+| `M46` | 出荷リスト情報 |
+| `O46` | 受注方法 |
+| `T46` | - |
+| `U46` | - |
+| `V46` | 有 |
+| `W46` | 標準受注 |
+| `X46` | コード値ではなく、テキストを出力するため、参照伝票番号を基に受注伝票データを参照し、テキストを取得する。<br>出荷タイプが在庫転送以外の場合、当項目を出力する。 |
+| `A47` | =ROW()-34 |
+| `B47` | 購買発注 |
+| `C47` | EKKO |
+| `D47` | ヘッダ |
+| `E47` | 伝票タイプ |
+| `G47` | CHAR |
+| `H47` | 4 |
+| `J47` | CMMPOITMDX(C_PURCHASEORDERITEMDEX) |
+| `K47` | PURCHASEORDERTYPE |
+| `L47` | 3 |
+| `M47` | 出荷リスト情報 |
+| `O47` | 受注方法 |
+| `T47` | - |
+| `U47` | - |
+| `V47` | 有 |
+| `W47` | プラント間在庫転送 |
+| `X47` | コード値ではなく、テキストを取得するため、参照伝票番号を基に発注伝票データを参照し、テキストを取得する。<br>出荷タイプが在庫転送の場合、当項目を出力する。 |
+| `A48` | =ROW()-34 |
+| `B48` | 出荷伝票 |
+| `C48` | LIPS |
+| `D48` | 明細 |
+| `E48` | 品目Grp1 |
+| `G48` | CHAR |
+| `H48` | 3 |
+| `J48` | ILEDELIVDOCITEM(I_DeliveryDocumentItem) |
+| `K48` | ADDITIONALMATERIALGROUP1 |
+| `L48` | 15 |
+| `M48` | 出荷リスト情報 |
+| `O48` | 該非-輸出令 |
+| `T48` | - |
+| `U48` | - |
+| `X48` | コード値ではなく、テキスト |
+| `A49` | =ROW()-34 |
+| `B49` | 受注伝票 |
+| `C49` | VBAK |
+| `D49` | ヘッダ/受注管理 |
+| `E49` | 登録者 |
+| `G49` | CHAR |
+| `H49` | 12 |
+| `J49` | CSDSLSDOCITMDX1(C_SalesDocumentItemDEX_1) |
+| `K49` | ZZCreatedByUser |
+| `L49` | 19 |
+| `M49` | 出荷リスト情報 |
+| `O49` | 受注伝票発行者 |
+| `T49` | - |
+| `U49` | - |
+| `V49` | 有 |
+| `X49` | コード値ではなく、テキスト<br>出荷タイプが在庫転送以外の場合、当項目を出力する。<br>VBAK-ERNAMを取得し、USR21-BNAMEの検索条件とする。USR21-ADDRNUMBERを取得し、ADRP-PERSNUMBERの検索条件とする。取得できたNAME_LASTとNAME_FIRSTを格納する。 |
+| `A50` | =ROW()-34 |
+| `B50` | 受注伝票 |
+| `C50` | USR21 |
+| `D50` | ヘッダ/受注管理 |
+| `E50` | Addr番号 |
+| `G50` | CHAR |
+| `H50` | 12 |
+| `J50` | Success FactorsのPerPersonalというAPIから取得し、DSPのローカルテーブルに格納するから取得予定(IF039) |
+| `K50` | - |
+| `L50` | 19 |
+| `M50` | 出荷リスト情報 |
+| `O50` | 受注伝票発行者 |
+| `T50` | - |
+| `U50` | - |
+| `V50` | 有 |
+| `X50` | コード値ではなく、テキスト<br>出荷タイプが在庫転送以外の場合、当項目を出力する。<br>VBAK-ERNAMを取得し、USR21-BNAMEの検索条件とする。USR21-ADDRNUMBERを取得し、ADRP-PERSNUMBERの検索条件とする。取得できたNAME_LASTとNAME_FIRSTを格納する。 |
+| `A51` | =ROW()-34 |
+| `B51` | 在庫転送 |
+| `C51` | EKKO |
+| `D51` | ヘッダ |
+| `E51` | 購買グループ |
+| `G51` | CHAR |
+| `H51` | 3 |
+| `J51` | CMMPOITMDX(C_PURCHASEORDERITEMDEX) |
+| `K51` | PURCHASINGGROUP |
+| `L51` | 19 |
+| `M51` | 出荷リスト情報 |
+| `O51` | 受注伝票発行者 |
+| `T51` | - |
+| `U51` | - |
+| `V51` | 有 |
+| `X51` | コード値ではなく、テキスト<br>出荷タイプが在庫転送の場合、当項目を出力する。<br>購買グループのテキストを取得するために使用する。 |
+
+### A.3 `プロセスフロー`
+
+- Size: 128 rows × 85 columns
+
+| Cell | Value |
+|---|---|
+| `A1` | IF基本設計書 |
+| `A2` | プロセスフロー |
+| `AF2` | 凡例 |
+| `AU3` | ファイル |
+| `AX3` | DB・MQ |
+| `AG4` | システム |
+| `AL4` | ステップ |
+| `AQ4` | Split |
+| `AU4` | メール |
+| `AX4` | DataStore |
+| `BB4` | API |
+| `BF4` | Event |
+| `BI4` | メール |
+
+### A.4 `プロセス定義`
+
+- Size: 52 rows × 10 columns
+
+| Cell | Value |
+|---|---|
+| `A1` | ステップ定義 |
+| `A2` | No |
+| `B2` | ステップ名 |
+| `C2` | ステップタイプ |
+| `D2` | Split |
+| `E2` | 処理内容 |
+| `F2` | エラー処理 |
+| `G2` | 参照 |
+| `H2` | 備考 |
+| `A3` | 1 |
+| `B3` | JP1起動 |
+| `C3` | SenderAdapter |
+| `E3` | JP1からジョブネットから日次で実行される。<br>URLパスは以下の通りに設定する。<br>/039/01<br>※SenderのHTTP Adapterの設定にて、CSRF Protectedを設定<br>※共通処理CheckOAuth処理で認証が満たされない場合、Basic認証はエラーとする。 |
+| `H3` | {<br>"reprocessFlag": "X"<br>} |
+| `A4` | 2 |
+| `B4` | 外部パラメータ取得 |
+| `C4` | その他プロセス処理 |
+| `E4` | HTTPのリクエストから受け取った値をPropertyに格納する。<br>・’Prop_Input_reprocessFlag’：再実行用フラグ<br>・条件用固定値の取得<br>・ファイルパスの取得 |
+| `F4` | ※エラーが発生した場合、Payloadを出力してエラーで処理を終了する。<br>※エラーレスポンスをする。<br>"status": "ERROR",<br>"message": "システムエラー",<br>"ResponseCode"："500" |
+| `B5` | サブプロセス（Local Integration process ） |
+| `A6` | 3-1 |
+| `B6` | エラー開始イベント |
+| `C6` | その他プロセス処理 |
+| `E6` | エラー処理を開始する |
+| `H6` | Error Start Event |
+| `A7` | 3-2 |
+| `B7` | VMからパラメータ取得 |
+| `C7` | その他プロセス処理 |
+| `E7` | Value Mapping'Vmap_Common_Address'から以下の<br>パラメータを取得する。<br>・HPKDB：Address(Host名)・LocationID・CredentialName・Port<br>※本機能使用の判定条件は固定値の場合、Value Mappingで事前に定義対応 |
+| `F7` | エラーが発生した場合、Payloadを出力してエラーで処理を終了する。<br>エラー発生時のメールでシステム管理者に通知する。<br>※シート：IF定義の(4)エラーハンドリングをご参照 |
+| `H7` | Local Integration process |
+| `A8` | 3-3 |
+| `B8` | 終了処理 |
+| `C8` | その他プロセス処理 |
+| `E8` | 処理を終了する |
+| `H8` | End Message |
+| `A9` | 4 |
+| `B9` | 再実行用フラグの判定 |
+| `C9` | 分岐 |
+| `E9` | Prop_Input_reprocessFlag’：再実行用フラグが’X’かどうか判断を行う。<br>・再実行用フラグが’X’の場合、DSPエラー履歴テーブル取得編集処理へ続行<br>・再実行用フラグが空白の場合、前回タイムスタンプ取得処理へ続行 |
+| `H9` | 積み残し対応：DSPのアドオンテーブルから取得のように仕様変更対応 |
+| `A10` | 5 |
+| `B10` | 前回タイムスタンプ取得 |
+| `C10` | その他プロセス処理 |
+| `E10` | 前回実行日時を取得するProp_LastRunTimestamp＝Lvari_LastRunTimestamp(前回実行日時)<br><br>出荷伝票情報取得処理へ続行 |
+| `F10` | エラーが発生した場合、Payloadを出力してエラーで処理を終了する。<br>エラー発生時のメールでシステム管理者に通知する。 |
+| `A11` | 6-1 |
+| `B11` | DSPエラー履歴テーブル取得編集 |
+| `C11` | その他プロセス処理 |
+| `E11` | 再実行用フラグが"X"場合のみ、DSPのエラー履歴テーブルからデータを取得するSQL分を作成する |
+| `G11` | DB定義(04)<br>エラー履歴テーブル仕様 |
+| `H11` | Content Modifier |
+| `A12` | 6-2 |
+| `B12` | DSPエラー履歴テーブル読込 |
+| `C12` | ReceiverAdapter |
+| `E12` | 再実行用フラグが"X"場合のみ、DSPから情報を依頼する |
+| `H12` | Request Reply |
+| `A13` | 6-3 |
+| `B13` | DSPエラー履歴テーブル削除データ作成 |
+| `C13` | その他プロセス処理 |
+| `E13` | 再実行用フラグが"X"場合のみ、DSPエラー履歴テーブルからデータを削除するSQL分を作成する<br>※上記DSPからエラー履歴テーブルデータを読込んだ後、履歴テーブルデータの全件データを削除する |
+| `G13` | DB定義(05)<br>エラー履歴テーブル仕様 |
+| `H13` | Groovy Script |
+| `A14` | 6-4 |
+| `B14` | DSPエラー履歴テーブルデータ削除 |
+| `C14` | ReceiverAdapter |
+| `E14` | 再実行用フラグが"X"場合のみ、DSPエラー履歴テーブルデータの全件データを削除する<br>次は9.出荷伝票情報取得処理へ行く |
+| `H14` | Request Reply |
+| `A15` | 7 |
+| `B15` | 日中・夜間・差分・再実行の分岐条件作成 |
+| `C15` | その他プロセス処理 |
+| `E15` | 通常データまたは遅延データより下記の処理を行う<br>差分処理<br>①外部パラメータ：再実行用フラグが'X'の場合、差分処理をしないこと<br>　・DSP履歴テーブルの出荷伝票番号と出荷明細番号より出荷伝票を取得する。<br><br>②外部パラメータ：再実行用フラグが空白の場合、<br> ・夜間実行の場合、差分処理をしないこと<br>(本日且つシステム時刻がAM:0:00~1:00は夜間判定、再実行の場合は考慮しません)<br>　夜間実施フラグを"X"で設定する。<br>　※ファイル名：夜間または日中の名前を決定する用<br><br>③外部パラメータ：再実行用フラグが空白の場合、<br> ・昼実行の場合、差分処理を行う<br>(本日且つシステム時刻がAM:1:00より大きいは昼判定、再実行の場合は考慮しません)<br>　 Write Variableに保存した前回実行日時で実施する。<br>　 条件：前回実行日付より大きい、または前回実行日付と同じ、 <br> 且つ前回実行時刻より大きいなど、対象データを取得する<br><br>④外部パラメータ：再実行用フラグが空白の場合、<br> SAP　Datasphereから連携してきた情報より |
+| `G15` | DB定義(01)<br><br>再実行用フラグ<br>外部パラメータ定義(01) |
+| `H15` | 下記の分岐より通常データと遅延データをそれぞれ情報を取得する<br>・通常の出荷リストデータ<br>　積載日=システム日付<br>・営業承認遅延の出荷リストデータ<br>　登録日が昨日、且つ積載日が過去日付<br><br>●再実行用フラグより分岐対応<br>①再実行用フラグがが"X"の場合<br>DSPテーブルにエラーデータを格納し、再実行フラグより再実行を行う<br>②再実行用フラグが空白の場合、<br>抽出条件よりDSPから対象データを取得する。 |
+| `E16` | ■下記の条件より対象出荷伝票の取得<br>・出荷伝票は不完全ではないこと('C'(完全))<br>・出荷明細は不完全ではないこと('C'(完全))<br>・出荷伝票は与信ブロックが設定されていないこと<br>　((与信ステータス)<>'B'、'C'(与信限度確認NG))<br>・出荷明細に未出庫数量があること<br> (在庫移動ステータス<>'C')<br>・通常の出荷リストデータ<br>　積載日=システム日付<br>・営業承認遅延の出荷リストデータ<br>　登録日が昨日、且つ積載日が過去日付<br>・抽出対象の出荷伝票タイプ<br>・標準出荷(Z100)、海外発送依頼(Z101)、標準無償出荷(Z102)、在庫転送(Z130)<br> 有償材料支給(Z132)、無償材料支給(Z134)<br>抽出対象の出荷ポイント<br>※抽出対象外として有償支給(国内)(1111)と有償支給(外部からBHP)(1113)と本社(1001)<br>・処理対象外明細カテゴリはBOM子および仕入先直送の明細カテゴリは除外する。<br>　明細カテゴリ<> 'Z1AA'(仕入先直送) and 'Z1BA'(無償費用 仕入先直送) and 'Z1KA'(無償 仕入先直送) and　'Z1C7'(預託引渡 BOM子) and 'Z1A7'(子BOM)<br>・出荷ブロックがブランクとなっている、または二段階承認用の出荷ブロックが設定されている出荷伝票は抽出対象外とする。<br>　出荷ブロック<>SPACE、'Z7'、と'Z9'<br>・プラント<br>　電子管(1001)、HPJ(1006)、固体(1002)、システム(1003)、レーザー(1004) |
+| `A17` | 8 |
+| `B17` | 出荷伝票情報及びキスト情報と名称の編集 |
+| `C17` | その他プロセス処理 |
+| `E17` | ■上記の条件より取得対象項目<br>出荷伝票のヘッダ情報取得<br>・出荷ポイント<br>・伝票タイプ※出力ファイル項目用ではない、ソート用<br>・出荷伝票番号<br>・積載日<br>・登録日※出力ファイル項目ではない、営業承認遅延判定用<br>・出庫予定日<br>・受注先<br>・インコタームズ<br>出荷伝票の明細情報の取得<br>・出荷明細番号<br>・品目コード<br>・明細/品目の明細テキスト<br>・出荷数量<br>・参照伝票番号<br>・参照明細番号<br>・品目Grp1(該非-輸出令)<br>・プラント※出力ファイル項目用ではない、ファイル出力事業部名称分岐用<br>受注伝票情報<br>・受注伝票タイプ<br>・登録担当者<br>・得意先参照<br>・受注伝票発行者<br>個人情報取得<br>・姓と名の取得 |
+| `E18` | 購買情報<br>・購買伝票タイプ<br>・購買グループ<br>品目マスタ情報取得<br>・責任原価センタ（製造）<br>・製品DB型名<br>販売伝票：取引先情報の取得<br>・得意先コード<br>・国/地域コード<br>・取引先機能<br>※取引先機能：受注先(SP)、出荷先(SH)、計画集計対象(ZC)→ユーザ会社名<br>得意先マスタ：一般データ情報の取得<br>・取引先の会社ID<br>ビジネスパートナー情報の取得<br>・検索語句1を受注先(受注先会社名)・出荷先(届出先会社名)・計画集計対象(ユーザ会社名)に設定する<br>※取引先の会社IDに値が入っているかつ仕向国(国/地域コード)がJP以外の場合<br>得意先品目/追加得意先品目取得<br>社外型名の取得<br>①テーブル「KNMTA」から得意先が使用する品目コードを取得し、追加得意先品目コード(社外型名)に設定する。※マッピング義No.22<br>②　①取得できない場合、製品DB型名の値がある場合、社外型名に設定する。<br>　　　※マッピング義No.23<br>③ ①と②がない場合、明細/品目の明細テキストの値がある場合、社外型名に設定する。<br>　　※マッピング定義No.24とマッピング定義No.21の設定が同じです。 |
+| `G18` | DB定義(02) |
+| `E19` | ・受注伝票の伝票タイプより伝票タイプテキスト取得<br><br>・購買伝票タイプテキスト<br>購買伝票タイプに対するテキストテーブルの購買伝票タイプと言語キー：JAを基に、購買伝票タイプテキストを取得する。<br><br>・購買グループテキスト<br>購買グループテーブルの購買グループより、購買グループテキストを取得する。<br><br>・品目Grp1のテキスト取得(該非-輸出令)<br>　品目グループ１より品目価格設定グループ１:テキストからテキストを取得する<br><br>・テキスト内容を取得<br>a. 出荷指図ヘッダテキストの取得<br>b. 出荷指図明細テキストの取得<br>c.規制関連情報明細テキストの取得 |
+| `G19` | ヘッダテキスト<br>明細テキスト<br>DB定義(03) |
+| `E20` | 通常データまたは遅延データより下記の処理を行う<br>IF定義の受信要件の海外ソート項目を参照し、降順でソートする。<br>受注先※出力ファイルを分けるため用<br>出荷ポイント<br>出庫日<br>伝票タイプ<br>海外発送依頼/有償材料支給/無償材料支給はファイルの最後に出力する<br>届け先カナ名<br>届け先BPコード<br>※カナ名については得意先マスタ「検索語句1」を使用するため、記号、英数字、アルファベット順、ひらがな、カナ、漢字の降順でソートする。<br>プラント（事業部）※出力ファイルを分けるため用 |
+| `H20` | Groovy Script<br>例：取得のデータおり伝票タイプの順は下記の場合<br>無償材料支給が1~5番、海外発送依頼が6~10番、有償材料支給が11~20番、無償出荷が21~30番、標準出荷が31~40番で登録されていたとします。以下の通り出力していただきたいです。<br>ファイルの出力の時、下記の順で対応すること。<br>海外発送依頼/有償材料支給/無償材料支給の伝票タイプは最後の順になります。<br>①31~40番 標準出荷<br>②21~30番 無償出荷<br>③1~10番 海外発送依頼<br>④11~20番 有償材料支給<br>⑤1~5番 無償材料支給 |
+| `A21` | 9 |
+| `B21` | 出荷伝票情報取得 |
+| `C21` | ReceiverAdapter |
+| `E21` | DSPから情報を依頼する |
+| `H21` | Request Reply |
+| `A22` | 10 |
+| `B22` | Splitterr用データ事前準備 |
+| `C22` | その他プロセス処理 |
+| `E22` | 通常データまたは遅延データより下記の処理を行う<br><br>①再実行用フラグが空白の場合<br>・上記の情報データよりプラント、出荷日（入庫予定日）、受注先コードの単位で抽出する。<br>・Splitterr用のXMLを生成しボディに上書きする。<br><br>②再実行用フラグが"X"場合<br> ・取得のエラー履歴テーブルのデータ区分が"A"(通常エラーデータ)の場合、通常データとする<br>　・取得のエラー履歴テーブルのデータ区分が"B"(遅延エラーデータ)の場合、遅延データとする<br>　・Splitterr用のXMLを生成しボディに上書きする。 |
+| `G22` | エラー履歴テーブルイメージ |
+| `H22` | Groovy Script |
+| `A23` | 11 |
+| `B23` | 判定処理 |
+| `C23` | 分岐 |
+| `E23` | ・通常データと遅延データがない場合、差分データを保存し、処理が正常終了する<br>・通常データ、または遅延データがある場合、データを分ける処理へ行く |
+| `H23` | Router |
+| `A24` | 12-1 |
+| `B24` | 差分データ保存 |
+| `C24` | その他プロセス処理 |
+| `E24` | タイムスタンプ情報を保存し、Variableに追加する。<br>①前回実行日時をWrite Variableの今回実行日時で保存する。<br>Lvari_LastRunTimestamp(前回実行日時)<br>=Prop_NowRunTimestamp(今回実行日時)<br>②夜間実施フラグをクリアする。 |
+| `H24` | Write Variables |
+| `A25` | 12-2 |
+| `B25` | 正常レスポンス作成<br>※受入完了あと、SAP指摘追加分 |
+| `C25` | その他プロセス処理 |
+| `E25` | 正常レスポンスを作成する。<br>"ResponseCode"："200" |
+| `F25` | ※エラーが発生した場合、Payloadを出力してエラーで処理を終了する。<br>※エラーレスポンスをする。<br>"ResponseCode"："400" |
+| `H25` | Content Modifier |
+| `A26` | 12-3 |
+| `B26` | 終了処理 |
+| `C26` | その他プロセス処理 |
+| `E26` | エラーせず、処理終了 |
+| `H26` | End Message |
+| `A27` | 13 |
+| `B27` | データを分ける処理 |
+| `C27` | Splitter |
+| `D27` | ✓ |
+| `E27` | ・通常データは事業部（プラント）、出庫日、受注先コードよりデータを分ける<br>・遅延データは事業部（プラント）、出庫日、受注先コードよりデータを分ける<br>※(事業部)プラント単位でデータを分ける。<br>1.電子管(1001)<br>2.固体(1002)<br>3.システム(1003)<br>4.レーザー(1004) |
+| `H27` | Iterating Splitter |
+| `I27` | v1.03変更 |
+| `A28` | 14 |
+| `B28` | 情報加工 |
+| `C28` | その他プロセス処理 |
+| `D28` | ✓ |
+| `E28` | 通常データまたは遅延データより下記の処理を行う<br>■マッピング定義を構造した正常（夜間・日中）データを加工する※データ単位で実施<br>①ヘッダ情報の編集<br>②マッピング定義の送信側の項目構造で対応イメージ<br>正常データ<br><records><br> <record><br> <field1>ORDERID</field1><br></record><br></records><br>※構造イメージ：項目<br><br>■マッピング定義を構造したエラー（夜間・日中）データを加工する<br>①ヘッダ情報の編集<br>②マッピング定義の送信側の項目構造で対応<br>エラーデータ（テキスト、名称など値がないデータ）<br>※DB定義の08~10よりエラー対象項目とエラーメッセージ情報を参照<br></record><br> <record><br> <field1>ORDERID</field1><br> <errorMessage>ERROR</errorMessage><br> </record><br></records><br>※構造イメージ：項目＋message |
+| `G28` | マッピング定義<br>DB定義の08~10よりエラーメッセージ情報を参照 |
+| `H28` | Groovy Script |
+| `A29` | 15 |
+| `B29` | データ並行分岐処理 |
+| `C29` | 分岐 |
+| `E29` | ・共通対応、ファイルパス定義処理へ行く<br>・遅延エラーデータがある場合、遅延エラーファイル名設定処理へ行く<br>・正常成功データがある場合、正常成功ファイル名設定処理へ行く<br>・遅延成功データがある場合、遅延成功ファイル名設定処理へ行く<br>・正常エラーデータがある場合、正常エラーファイル名設定処理へ行く<br>※上記分けた(事業部)プラント単位データよりファイル名、ファイルパスを決定する<br>1.電子管(1001)<br>2.固体(1002)<br>3.システム(1003)<br>4.レーザー(1004) |
+| `F29` | エラーが発生した場合、Payloadを出力してエラーで処理を終了する。<br>エラー発生時のメールでシステム管理者に通知する。<br>※シート：IF定義の(4)エラーハンドリングをご参照 |
+| `H29` | Router |
+| `I29` | v1.03変更 |
+| `A30` | 16-1 |
+| `B30` | ファイルパス定義 |
+| `C30` | その他プロセス処理 |
+| `E30` | ファイルパスをプロパティに定義する<br>・Name:Prop_NormalFile_Path<br>・Type:Constant<br>次処理はファイル出力処理へ行く |
+| `F30` | エラーが発生した場合、Payloadを出力してエラーで処理を終了する。<br>エラー発生時のメールでシステム管理者に通知する。<br>※シート：IF定義の(4)エラーハンドリングをご参照 |
+| `G30` | File定義 |
+| `H30` | Content Modifier |
+| `A31` | 16-2 |
+| `B31` | 遅延エラーファイル名設定 |
+| `C31` | その他プロセス処理 |
+| `E31` | 遅延エラーファイル名設定を行う。<br>次処理はデータの変換処理へ行く |
+| `G31` | File定義06,08 |
+| `H31` | Content Modifier |
+| `A32` | 16-3 |
+| `B32` | 正常成功ファイル名設定 |
+| `C32` | その他プロセス処理 |
+| `E32` | 正常成功ファイル名設定を行う。<br>次処理はデータの変換処理へ行く |
+| `G32` | File定義01,03 |
+| `H32` | Content Modifier |
+| `A33` | 16-4 |
+| `B33` | 遅延成功ファイル名設定 |
+| `C33` | その他プロセス処理 |
+| `E33` | 遅延成功ファイル名設定を行う。<br>次処理はデータの変換処理へ行く |
+| `G33` | File定義02,04 |
+| `H33` | Content Modifier |
+| `A34` | 16-5 |
+| `B34` | 正常エラーファイル名設定 |
+| `C34` | その他プロセス処理 |
+| `E34` | 正常エラーファイル名設定を行う。<br>次処理はデータの変換処理へ行く |
+| `G34` | File定義05,07 |
+| `H34` | Content Modifier |
+| `A35` | 17 |
+| `B35` | データの変換 |
+| `C35` | その他プロセス処理 |
+| `E35` | 抽出したデータを元にパイプ区切りのテキストへ変換する<br>形式を変換する（XML→CSV）<br>※カンマ「,」区切りテキストファイル |
+| `F35` | エラーが発生した場合、Payloadを出力してエラーで処理を終了する。<br>エラー発生時のメールでシステム管理者に通知する。<br>※シート：IF定義の(4)エラーハンドリングをご参照 |
+| `H35` | XML To CSV Converter |
+| `A36` | 18 |
+| `B36` | 共有フォルダに出力 |
+| `C36` | ReceiverAdapter |
+| `E36` | 編集しファイルを共有フォルダ出力に出力する。<br>※出力時全項目を明細単位でフラットファイルとして出力する（ヘッダ・明細・その他項目を1行で保持する） |
+| `F36` | エラーが発生した場合、Payloadを出力してエラーで処理を終了する。<br>エラー発生時のメールでシステム管理者に通知する。<br>※シート：IF定義の(4)エラーハンドリングをご参照 |
+| `G36` | File定義 |
+| `H36` | Send |
+| `A37` | 19-1 |
+| `B37` | DSPエラー履歴テーブル更新データ作成 |
+| `C37` | その他プロセス処理 |
+| `E37` | エラーデータよりDSPエラー履歴テーブルの更新データを作成する。(一括更新・挿入)<br>※一括UPSERTの SQL生成<br>①販売伝票、明細、データ区分をキーとして履歴テーブルに存在しない場合、登録データを作成する<br> ・通常エラーデータの場合、データ区分を"A"(通常エラーデータ)で設定する<br>　・遅延エラーデータの場合、データ区分を"B"(遅延エラーデータ)で設定する<br><br>②販売伝票、明細、データ区分をキーとして履歴テーブルに存在する場合、更新データを作成する |
+| `G37` | DB定義(06)登録<br>DB定義(07)更新<br>エラー履歴テーブル仕様 |
+| `H37` | Groovy Script |
+| `A38` | 19-2 |
+| `B38` | DSPエラー履歴テーブルデータ更新 |
+| `C38` | ReceiverAdapter |
+| `E38` | 生成されたSQL文でDSPエラー履歴テーブルデータを一括で更新する<br>・上記の処理より登録データがある場合、DSPエラー履歴テーブルデータに登録する<br>・上記の処理より更新データがある場合、DSPエラー履歴テーブルデータを更新する |
+| `H38` | Request Reply |
+| `A39` | 20 |
+| `B39` | Gather<br>※受入後対応予定 |
+| `C39` | その他プロセス処理 |
+| `E39` | ファイル出力後、情報を連結する。 |
+| `H39` | Gather |
+| `A40` | 21 |
+| `B40` | 差分処理判定 |
+| `C40` | 分岐 |
+| `E40` | ・再実行ではない場合、差分保存処理へ<br>・再実行の場合、正常レスポンス作成処理へ行く |
+| `H40` | Router |
+| `B41` | サブプロセス（Exception ） |
+| `A42` | 22 |
+| `B42` | エラー開始イベント<br>※受入後対応予定 |
+| `C42` | その他プロセス処理 |
+| `E42` | エラー処理を開始する |
+| `H42` | Error Start Event |
+| `A43` | 23 |
+| `B43` | Attachment出力処理<br>※受入後対応予定 |
+| `C43` | その他プロセス処理 |
+| `E43` | エラー発生時のPayloadをAttachMentに出力する |
+| `H43` | Groovy Script |
+| `A44` | 24 |
+| `B44` | 終了処理<br>※受入後対応予定 |
+| `C44` | その他プロセス処理 |
+| `E44` | 処理を終了する |
+| `H44` | Error End Event |
+
+### A.5 `DB定義`
+
+- Size: 25 rows × 6 columns
+
+| Cell | Value |
+|---|---|
+| `A1` | DB定義 |
+| `A2` | No |
+| `B2` | 方式 |
+| `C2` | テーブル名 |
+| `D2` | 処理概要 |
+| `E2` | その他仕様 |
+| `A3` | 01 |
+| `B3` | 読込 |
+| `C3` | HPK_Datasphere_XXX |
+| `D3` | 出荷リスト情報データを取得する。<br>(結合条件)<br>IF_C_SalesDocumentItemDEX_1-SALESDOCUMENT(受注伝票番号)=IF_I_DeliveryDocumentItem-REFERENCESDDOCUMENT(出荷明細の参照伝票番号)<br>IF_I_DeliveryDocumentItem-DELIVERYDOCUMENT(出荷明細データの伝票番号)=IF_I_DeliveryDocument-DELIVERYDOCUMENT(出荷ヘッダデータの伝票番号)<br>IF_I_Product-PRODUCT(一般商品データの品目コード)=IF_I_DeliveryDocumentItem-MATERIAL(出荷明細の品目)<br>IF_C_SalesDocumentItemDEX_1-SALESDOCUMENTITEM(販売伝票：明細データ-明細番号)=IF_I_DeliveryDocumentItem-REFERENCESDDOCUMENTITEM(出荷明細の参照伝票明細番号)<br>IF_ZI_XA_CustMatInfoRec-SALESORGANIZATION(得意先/品目情報の販売組織)=IF_C_SalesDocumentItemDEX_1-SALESORGANIZATION(受注ヘッダデータの販売組織)<br>IF_ZI_XA_CustMatInfoRec-DISTRIBUTIONCHANNEL(得意先/品目情報の流通チャネル)=IF_C_SalesDocumentItemDEX_1-DISTRIBUTIONCHANNEL(受注ヘッダの流通チャネル)<br>IF_ZI_XA_CustMatInfoRec-CUSTOMER(得意先/品目情報の受注先)=IF_C_SalesDocumentItemDEX_1-SOLDTOPARTY(受注ヘッダの受注先)<br>IF_ZI_XA_CustMatInfoRec-MATERIAL(得意先/品目情報の品目)=IF_C_SalesDocumentItemDEX_1-MATERIAL(出荷明細の品目)<br>IF_ZI_SD_SalesDocPartner-SALESDOCUMENT(販売伝票:取引先の伝票番号)=IF_I_DeliveryDocumentItem-DELIVERYDOCUMENT(出荷明細データの伝票番号)<br>IF_I_Customer-CUSTOMER(得意先マスタの得意先コード)=IF_ZI_SD_SalesDocPartner-CUSTOMER(得意先コード)<br>IF_I_BusinessPartner-BUSINESSPARTNER(ビジネスパートナ番号)=IF_I_Customer-CUSTOMER(得意先マスタの得意先コード)<br>IF_C_PurchaseOrderItemDEX-PURCHASEORDER(購買伝票ヘッダの伝票番号)=IF_I_DeliveryDocumentItem-REFERENCESDDOCUMENT(出荷明細の参照伝票番号)<br>IF_PerPersonal-personIdExternal(Person ID External) = IF_C_SalesDocumentItemDEX_1-ZZCreatedByUser(受注登録者)<br>(取得条件)<br>IF_ZI_XA_AddrOrgPostalAddr-NATION(国際アドレスのバージョン ID)=I(国際版)<br>IF_ZI_SD_SalesDocPartner-PARTNERFUNCTION(取引先機能)=受注先「SP(AG)」 or 出荷先「SH(WE)」 or 計画集計対象「ZC」<br>(IF_ZI_SD_SalesDocPartner-US_FRGNACCTTAXRCPNTCNTRY(国/地域コード)<>'JP'　AND<br>IF_ZI_SD_SalesDocPartner-PARTNERFUNCTION(取引先機能)= 出荷先「SH(WE)」)<br>IF_I_DeliveryDocument-HDRGENERALINCOMPLETIONSTATUS( 不完全ステータス(ヘッダ))='C'(完全)<br>IF_I_DeliveryDocumentItem-ITEMGENERALINCOMPLETIONSTATUS(不完全ステータス(明細))='C'(完全)<br>IF_I_DeliveryDocument-TOTALCREDITCHECKSTATUS(与信ステータス)<>'B' and 'C'(与信ブロック)※与信限度確認を実行済：伝票NG<br>IF_I_DeliveryDocumentItem-GOODSMOVEMENTSTATUS(在庫移動ステータス)<>'C'<br>IF_I_DeliveryDocumentItem-PLANT=電子管(1001)、HPJ(1006)、固体(1002)、システム(1003)、レーザー(1004) |
+| `D4` | ・通常の出荷リストデータを取得するとき<br>　積載日付(IF_I_DeliveryDocument-LOADINGDATE)＝システム日付　　　　　 または（※別々で抽出して格納）<br>・営業承認遅延の出荷リストデータを取得するとき<br>登録日付(IF_I_DeliveryDocument-CREATIONDATE)＝システム日付-1 and<br>　積載日付(IF_I_DeliveryDocument-LOADINGDATE)<システム日付<br>IF_I_DeliveryDocument-DELIVERYDOCUMENTTYPE(出荷タイプ)=標準出荷(Z100) or 海外発送依頼(Z101) or 標準無償出荷(Z102)<br> or 在庫転送(プラント間)(Z130) or 有償材料支給(Z132) or無償材料支給(Z134) <br>IF_I_DeliveryDocument-SHIPPINGPOINT(出荷ポイント)<>有償支給(国内)(1111) and 有償支給(外部からBHP)(1113) and 本社(1001)<br>IF_I_DeliveryDocument-DELIVERYBLOCKREASON(出荷ブロック)<>SPACE and 'Z7' and 'Z9'<br>IF_I_DeliveryDocumentItem-DELIVERYDOCUMENTITEMCATEGORY(明細カテゴリ)<> 'Z1AA'(仕入先直送) and 'Z1BA'(無償費用 仕入先直送) and 'Z1KA'(無償 仕入先直送) and　'Z1C7'(預託引渡 BOM子) and 'Z1A7'(子BOM)<br>■昼実行(システム日付が本日且つシステム時刻がAM:1:00より大きい)の場合、外部パラメータ「Ex_reprocessFlag」が設定なしの場合<br>IF_I_DeliveryDocument-CREATIONDATE(登録日付)>前回実行日時の日付　or　　　　　　※①ヘッダ差分　　　　　　　　　<br>IF_I_DeliveryDocument-CREATIONDATE(登録日付)=前回実行日時の日付　and　　　　　※②ヘッダ差分<br>IF_I_DeliveryDocument-CREATIONTIME(登録時刻)>前回実行日時の時刻　 or <br>IF_I_DeliveryDocument-LASTCHANGEDATE(変更日)<>IF_I_DeliveryDocument-CREATIONDATE(登録日付)and ※③ヘッダ差分<br>IF_I_DeliveryDocument-LASTCHANGEDATE(変更日)>前回実行日時の日付　or　　　<br>IF_I_DeliveryDocument-LASTCHANGEDATE(変更日) <>IF_I_DeliveryDocument-CREATIONDATE(登録日付) and 　　※④明細差分<br>IF_I_DeliveryDocument-LASTCHANGEDATE(変更日) <>IF_I_DeliveryDocument-LASTCHANGEDATE(変更日) and ※⑤明細差分<br>IF_I_DeliveryDocument-LASTCHANGEDATE(変更日)>前回実行日時の日付<br>※Lvari_LastRunTimestamp(前回実行日時)<br>■最実行の場合、外部パラメータ：再実行用フラグ「Ex_reprocessFlag」が'X'の場合より<br>IF_I_DeliveryDocument-DELIVERYDOCUMENT(出荷伝票) IN Ex_deliveryList(出荷伝票番号)<br>■夜間実行(システム日付が本日且つシステム時刻がAM:0:00~1:00)の場合、外部パラメータ：再実行用フラグ「Ex_reprocessFlag」が設定なしの場合<br>　 差分処理が行わない |
+| `D5` | (取得項目)<br>出荷ポイント(IF_I_DeliveryDocument-SHIPPINGPOINT)<br>出荷伝票タイプ(IF_I_DeliveryDocument-DELIVERYDOCUMENTTYPE)※※出力ファイル項目用ではない、ソート用<br>品目コード(IF_I_DeliveryDocumentItem-MATERIAL)<br>責任原価センタ（製造）(IF_I_Product-ZZ1_COSTC_MANUz2_PRD)<br>製品DB型名(IF_I_Product-ZZ1_DB_Name_PRD_PRD)<br>出庫予定日付(IF_I_DeliveryDocument-PLANNEDGOODSISSUEDATE)<br>積載日付(IF_I_DeliveryDocument-LoadingDate)<br>インコタームズ(IF_I_DeliveryDocument-IncotermsClassification)<br>受注先(IF_I_DeliveryDocument-SOLDTOPARTY)<br>得意先参照(IF_C_SalesDocumentItemDEX_1-PURCHASEORDERBYCUSTOMER)<br>出荷伝票番号(IF_I_DeliveryDocumentItem-DELIVERYDOCUMENT)<br>出荷明細番号(IF_I_DeliveryDocumentItem-DELIVERYDOCUMENTITEM)<br>明細テキスト(IF_I_DeliveryDocumentItem-SALESDOCUMENTITEMTEXT)：社内型名<br>出荷数量実績(IF_I_DeliveryDocumentItem-ACTUALDELIVERYQUANTITY)<br>参照伝票番号(IF_I_DeliveryDocumentItem-REFERENCESDDOCUMENT(出荷明細の参照伝票番号))<br>参照明細番号(IF_I_DeliveryDocumentItem-REFERENCESDDOCUMENTITEM(出荷明細の参照伝票明細番号)<br>品目Grp1(該非-輸出令)(IF_I_DeliveryDocumentItem-ADDITIONALMATERIALGROUP1)<br>登録担当者(IF_C_SalesDocumentItemDEX_1-ZZCreatedByUser)<br>得意先が使用する品目コード(社外型名)(IF_ZI_XA_CustMatInfoRec-KNMTA_MATERIALDESCRBYCUSTOMER)<br>取引先機能(IF_ZI_SD_SalesDocPartner-PARTNERFUNCTION)<br>国/地域コード(IF_ZI_SD_SalesDocPartner-US_FRGNACCTTAXRCPNTCNTRY)<br>得意先マスタの取引先の会社ID(IF_I_Customer-TRADINGPARTNER)<br>検索語句1(IF_I_BusinessPartner-SEARCHTERM1)※出力項目用<br>名称1(IF_ZI_XA_AddrOrgPostalAddr-AddresseeName1)<br>名称2(IF_ZI_XA_AddrOrgPostalAddr-AddresseeName2)<br>プラント(IF_I_DeliveryDocumentItem-PLANT)※出力ファイル項目用ではない、ファイル出力事業部名称分岐用<br>受注ヘッダデータの伝票タイプ(IF_C_SalesDocumentItemDEX_1-SALESDOCUMENTTYPE)※テキスト取得用<br>購買伝票ヘッダのグループ(IF_C_PurchaseOrderItemDEX-PURCHASINGGROUP)※テキスト取得用<br>購買伝票ヘッダの伝票タイプ(IF_C_PurchaseOrderItemDEXt-PURCHASEORDERTYPE)※テキスト取得用<br>社内名英字(IF_PerPersona-businessFirstNameAlt2)<br>社内姓英字(IF_PerPersona-businessLastNameAlt2)<br>・対象データがない場合、処理が正常終了する<br>・対象データがある場合、後続処理へ行く |
+| `A6` | 02 |
+| `B6` | 読込 |
+| `C6` | HPK_Datasphere_XXX |
+| `D6` | 上記取得の出荷リスト情報の通常データまたは遅延データより下記の処理を行い、テキストの取得<br>※テキストが取得できない場合、空白のままで設定<br>・販売伝票タイプのテキストの取得<br>(結合条件)<br>IF_I_SalesDocumentTypeText-SALESDOCUMENTTYPE(販売伝票タイプ:テキストの販売伝票タイプ)=上記No.01でIF_C_SalesDocumentItemDEX_1-SALESDOCUMENTTYPE(受注ヘッダデータの伝票タイプ)<br>(取得条件)<br>IF_I_SalesDocumentTypeText-LANGUAGE(言語キー)='JA'<br>(取得項目)<br>販売伝票タイプテキスト(IF_I_SalesDocumentTypeText-SALESDOCUMENTTYPENAME<br>・購買発注の伝票タイプのテキスト<br>(結合条件)<br>IF_I_PurchasingDocumentTypeText-PURCHASINGDOCUMENTTYPE(購買伝票タイプテキストの伝票タイプ)=上記No.01で取得のIF_C_PurchaseOrderItemDEX-PURCHASEORDERTYPE(購買伝票ヘッダの伝票タイプ)<br>IF_I_PurchasingGroup-PURCHASINGGROUP(購買グループの購買グループ)=上記No.01で取得のIF_C_PurchaseOrderItemDEX-PURCHASINGGROUP(購買伝票ヘッダのグループ)<br>(取得条件)<br>IF_I_PurchasingDocumentTypeText-PurchasingDocumentCategory='F'(購買発注)<br>IF_I_PurchasingDocumentTypeText-LANGUAGE(言語キー)='JA'<br>(取得項目)<br>IF_I_PurchasingDocumentTypeText-PURCHASINGDOCUMENTTYPENAME(購買伝票タイプテキスト)<br>IF_I_PurchasingGroup-PURCHASINGGROUPNAME(購買グループテキスト)<br>※出荷タイプが在庫転送の場合、項目を出力する。<br>・品目Grp1のテキスト取得(該非-輸出令)<br>(結合条件)<br>品目グループ１(IF_I_AdditionalMaterialGroup1Text-ADDITIONALMATERIALGROUP1)=上記No.01で品目グループ１(IF_I_DeliveryDocumentItem-ADDITIONALMATERIALGROUP1)<br>(取得条件)<br>言語キー(IF_I_AdditionalMaterialGroup1Text-LANGUAGE)='JA'<br>(取得項目)<br>テキスト(IF_I_AdditionalMaterialGroup1Text-ADDITIONALMATERIALGROUP1NAME) |
+| `E6` | 参考イメージ：select~for all enters in table |
+| `A7` | 03 |
+| `B7` | 読込 |
+| `C7` | HPK_Datasphere_XXX |
+| `D7` | 上記取得の出荷リスト情報の通常データまたは遅延データより下記の処理を行い、出荷指図(ヘッダテキストと明細テキスト)、規制関連情報を取得する。<br>a. 出荷指図ヘッダテキストの取得<br> ZSDTLX_0001から<br>(取得条件)<br> テキストオブジェクト(ZSDTLX_0001-TDOBJECT)=VBBK<br> 名称(ZSDTLX_0001-TDNAME)=出荷伝票番号と明細番号の結合<br> テキストID(ZSDTLX_0001-TDID)=Z108<br> 言語キー(ZSDTLX_0001-TDSPRAS)=JA<br>(取得項目)<br> 出荷指図ヘッダテキスト(ZSDTLX_0001-TEXT)<br><br>b. 出荷指図明細テキストの取得<br>(取得条件)<br> テキストオブジェクト(ZSDTLX_0002-TDOBJECT)=VBBP<br> 名称(ZSDTLX_0002-TDNAME)=出荷伝票番号と明細番号の結合<br> 伝票番号(ZSDTLX_0002-VBELN)=出荷伝票番号<br>　　明細番号(ZSDTLX_0002-POSNR)=明細番号<br> テキストID(ZSDTLX_0002-TDID)=Z202<br> 言語キー(ZSDTLX_0002-TDSPRAS)=JA<br>(取得項目)<br> 出荷指図明細テキスト(ZSDTLX_0002-TEXT)<br><br> c.規制関連情報の取得<br>(取得条件)<br>　　 テキストオブジェクト(ZSDTLX_0002-TDOBJECT)=VBBP<br> 名称(ZSDTLX_0002-TDNAME)=出荷伝票番号と明細番号の結合<br> 伝票番号(ZSDTLX_0002-VBELN)=出荷伝票番号<br>　　明細番号(ZSDTLX_0002-POSNR)=明細番号<br> テキストID(ZSDTLX_0002-TDID)=Z200<br> 言語キー(ZSDTLX_0002-TDSPRAS)=ID<br>(取得項目)<br>　　規制関連情報(ZSDTLX_0002-TEXT) |
+| `A8` | 04 |
+| `B8` | 読込 |
+| `C8` | 出荷カード情報IF_エラー履歴テーブル |
+| `D8` | DSPの出荷カード情報IF_エラー履歴テーブルデータを取得する<br>(抽出条件)<br>なし、全件取得<br>(取得項目)<br>全項目<br>※エラー履歴テーブルイメージ |
+| `F8` | v0.3mod |
+| `A9` | 05 |
+| `B9` | 削除 |
+| `C9` | 出荷カード情報IF_エラー履歴テーブル |
+| `D9` | レコードを削除する。<br>(削除条件)<br>全件データ削除<br>※エラー履歴テーブル仕様 |
+| `F9` | v0.5mod |
+| `A10` | 06 |
+| `B10` | 登録 |
+| `C10` | 出荷カード情報IF_エラー履歴テーブル |
+| `D10` | レコードを登録する。<br>(登録項目)<br>全項目<br>※エラー履歴テーブル仕様 |
+| `F10` | v0.5mod |
+| `A11` | 07 |
+| `B11` | 変更 |
+| `C11` | 出荷リスト海外IF_エラー履歴テーブル |
+| `D11` | 項目を更新する。<br>(更新条件)<br>出荷伝票 =エラー対象の出荷伝票<br>出荷明細 = エラー対象の出荷明細<br>データ区分 = エラー対象のデータ区分<br>(変更項目)<br>※エラー履歴テーブル仕様 |
+| `F11` | v0.5mod |
+| `A12` | 08 |
+| `B12` | その他 |
+| `D12` | 上記取得の出荷リスト情報の通常データまたは遅延データより下記の処理を行い、マッピング定義を参照し、出荷リスト情報を加工する。<br>IF定義のプロセス内容も参照し、出力ファイルのデータを加工する。<br>マッピング定義L列No.1(出荷場所)<br>出荷ポイント(IF_I_DeliveryDocument-SHIPPINGPOINT)を出荷場所に設定する<br>マッピング定義L列No.2(受注No.)<br>　参照伝票番号(IF_I_DeliveryDocumentItem-REFERENCESDDOCUMENT)と参照明細番号(IF_I_DeliveryDocumentItem-REFERENCESDDOCUMENTITEM)をハイフンで繋げて受注番号に設定<br>マッピング定義L列No.3(出荷No.) <br>　出荷伝票番号(IF_I_DeliveryDocumentItem-DELIVERYDOCUMENT)と出荷明細番号(IF_I_DeliveryDocumentItem-DELIVERYDOCUMENTITEM)をハイフンで繋げる<br>マッピング定義L列No.4(受注方法) <br> 販売伝票タイプテキスト(IF_I_SalesDocumentTypeText-SALESDOCUMENTTYPENAME)を受注方法に設定する。※在庫転送以外設定<br>　 ※テキスト取得できない場合、エラーデータに格納する。次のデータへ処理へ行く<br>　　「受注方法(販売伝票タイプテキスト)が取得できません。　出荷伝票番号:出荷伝票番号の値　明細番号:明細番号の値」<br>マッピング定義L列No.4(受注方法)<br> 出荷タイプ「Z130」プラント間在庫転送場合、「Z134」無償材料支給の場合、IF_I_PurchasingDocumentTypeText-PURCHASINGDOCUMENTTYPENAME(購買伝票タイプテキスト)を設定する。<br>　　 ※テキスト取得できない場合、エラーデータに格納する。次のデータへ処理へ行く<br>　　「受注方法(購買伝票タイプテキスト)が取得できません。　出荷伝票番号:出荷伝票番号の値　明細番号:明細番号の値」<br>マッピング定義L列No.5(受注先コード)<br> 受注先(IF_I_DeliveryDocument-SOLDTOPARTY) を受注先コードに設定する。※出荷タイプが在庫転送の場合、ブランクとする。<br>現法の場合、略称を出力する。<br>受注先会社名、ユーザ会社名、届出先会社名※現法略称を出力<br>※(IF_ZI_SD_SalesDocPartner-PARTNERFUNCTION(取引先機能)= 出荷先「SH(WE)」 AND IF_ZI_SD_SalesDocPartner-US_FRGNACCTTAXRCPNTCNTRY(国/地域コード))がJP以外の場合、取引先の会社ID(IF_I_Customer-TRADINGPARTNER)が空白ではない場合、<br>マッピング定義L列No.6(受注先会社名)<br>・取引先機能(IF_ZI_SD_SalesDocPartner-PARTNERFUNCTION)が受注先「SP(AG)」 の場合、取引先の会社ID(IF_I_Customer-TRADINGPARTNER)の値がある場合、検索語句1(IF_I_BusinessPartner-SEARCHTERM1)の値を受注先会社名に設定する。<br>　※取得できない場合、エラーデータに格納する。次のデータへ処理へ行く<br>　　「受注先会社名が取得できません。出荷伝票番号:出荷伝票番号の値　明細番号:明細番号の値」 |
+| `A13` | 09 |
+| `B13` | その他 |
+| `D13` | マッピング定義L列No.7(ユーザ会社名)<br>・取引先機能(IF_ZI_SD_SalesDocPartner-PARTNERFUNCTION)が計画集計対象「ZC」 の場合、検語句1(IF_I_BusinessPartner-SEARCHTERM1)の値をユーザ会社名に設定する。<br>　※取得できない場合、エラーデータに格納する。次のデータへ処理へ行く<br>　　「ユーザ会社名が取得できません。出荷伝票番号:出荷伝票番号の値　明細番号:明細番号の値」<br>マッピング定義L列No.8(届出先会社名)<br>　取引先機能(IF_ZI_SD_SalesDocPartner-PARTNERFUNCTION)が出荷先「SH(WE)」 の場合、且つ検索語句1(IF_I_BusinessPartner-SEARCHTERM1)の値を届出先会社名に設定する。<br>※取得できない場合、エラーデータに格納する。次のデータへ処理へ行く<br>　　「届出先会社名が取得できません。出荷伝票番号:出荷伝票番号の値　明細番号:明細番号の値」<br><br>現法以外の場合<br>※(IF_ZI_SD_SalesDocPartner-PARTNERFUNCTION(取引先機能)= 出荷先「SH(WE)」 AND IF_ZI_SD_SalesDocPartner-US_FRGNACCTTAXRCPNTCNTRY(国/地域コード))がJP以外の場合、取引先の会社ID(IF_I_Customer-TRADINGPARTNER)が空白の場合、<br>マッピング定義L列No.6(受注先会社名)<br>・取引先機能(IF_ZI_SD_SalesDocPartner-PARTNERFUNCTION)が受注先「SP(AG)」 の場合、<br> 受注先の名称1(IF_ZI_XA_AddrOrgPostalAddr-AddresseeName1)と名称2(IF_ZI_XA_AddrOrgPostalAddr-AddresseeName2)を結合してを受注先会社名に設定する。<br>・マッピング定義L列No.7(ユーザ会社名)<br>・取引先機能(IF_ZI_SD_SalesDocPartner-PARTNERFUNCTION)が計画集計対象「ZC」 の場合、<br>　　計画集計対象の名称1(IF_ZI_XA_AddrOrgPostalAddr-AddresseeName1)と名称2(IF_ZI_XA_AddrOrgPostalAddr-AddresseeName2)を結合してユーザ会社名に設定する。<br>　※取得できない場合、エラーデータに格納する。次のデータへ処理へ行く<br>　　「ユーザ会社名が取得できません。出荷伝票番号:出荷伝票番号の値　明細番号:明細番号の値」<br>マッピング定義L列No.8(届出先会社名)<br>・取引先機能(IF_ZI_SD_SalesDocPartner-PARTNERFUNCTION)が出荷先「SH(WE)」 の場合、<br>　出荷先の名称1(IF_ZI_XA_AddrOrgPostalAddr-AddresseeName1)と名称2(IF_ZI_XA_AddrOrgPostalAddr-AddresseeName2)を結合して届出先会社名に設定する。<br>※取得できない場合、エラーデータに格納する。次のデータへ処理へ行く<br>　　「届出先会社名が取得できません。出荷伝票番号:出荷伝票番号の値　明細番号:明細番号の値」<br><br>マッピング定義L列No.9(インコタームズ)<br> インコタームズ(IF_I_DeliveryDocument-INCOTERMSCLASSIFICATION)<br>マッピング定義L列No.10(得意先参照→注文番号)<br>　得意先参照(IF_C_SalesDocumentItemDEX_1-PURCHASEORDERBYCUSTOMER)の値がある場合、注文番号に設定する。<br>　※出荷タイプが在庫転送の場合、ブランクとする。<br>マッピング定義L列No.11(責任原価センタ（製造））→経費コード)<br> 責任原価センタ（製造）(IF_I_Product-ZZ1_COSTC_MANUz2_PRD)を経費コードに設定する。<br>マッピング定義L列No.12(明細テキスト→社内型名)<br>　 明細テキスト(IF_I_DeliveryDocumentItem-SALESDOCUMENTITEMTEXT)を社内型名に設定する。<br>※社内型名取得できない場合、エラーデータに格納する。次のデータへ処理へ行く<br>　「社内型名が取得できません。　出荷伝票番号　明細番号出荷伝票番号:出荷伝票番号の値　明細番号:明細番号の値」 |
+| `A14` | 10 |
+| `B14` | その他 |
+| `D14` | マッピング義L列No.13(追加得意先品目コード→社外型名)<br>　 得意先が使用する品目コード(社外型名)(IF_ZI_XA_CustMatInfoRec-KNMTA_MATERIALDESCRBYCUSTOMER)の値がある場合を社外型名に設定する。<br>マッピング義L列No.13(製品DB型名→社外型名)<br>　 得意先が使用する品目コードがない場合、製品DB型名(IF_I_Product-ZZ1_DB_NAME_PRD_PRD)を社外型名に設定する。<br>マッピング義L列No.13(明細テキスト→社外型名)<br> 得意先が使用する品目コードと製品DB型名(IF_I_Product-ZZ1_DB_NAME_PRD_PRD)がない場合、<br>　 明細テキスト(IF_I_DeliveryDocumentItem-SALESDOCUMENTITEMTEXT)を社外型名に設定する。<br>※社外型名取得できない場合、エラーデータに格納する。次のデータへ処理へ行く<br>　　「社外型名が取得できません。　出荷伝票番号:出荷伝票番号の値　明細番号:明細番号の値」<br>マッピング義L列No.14(出荷数量→数量)<br> 出荷数量実績(IF_I_DeliveryDocumentItem-ACTUALDELIVERYQUANTITY)を数量に設定する。<br>マッピング義L列No.15(品目Grp1→該非-輸出令)<br> 品目Grp1(該非-輸出令)テキスト(IF_I_DeliveryDocumentItem-ADDITIONALMATERIALGROUP1)<br>マッピング義L列No.16(出庫予定日→出荷日)<br> 出庫予定日付(IF_I_DeliveryDocument-PLANNEDGOODSISSUEDATE)を出荷日に設定する。<br>マッピング義L列No.17(ロングテキスト-出荷指図ヘッダ/テキスト→摘要欄)<br>　ロングテキストの出荷指図ヘッダテキストと明細テキストを結合して摘要欄に設定する。<br>マッピング義L列No.18(ロングテキスト-品目販売テキスト(規制関連情報)→規制関連情報)<br>マッピング義L列No.19(姓と名→受注伝票発行者)※出荷タイプが在庫転送以外の場合<br>　社内姓(IF_PerPersona-businessLastName)と社内名(IF_PerPersona-businessFirstName)を半角スペースで結合し、設定する。※DSP配置予定<br>マッピング定義L列No.19(購買グループテキスト→受注伝票発行者) ※出荷タイプが在庫転送の場合<br> IF_I_PurchasingGroup-PURCHASINGGROUPNAME(購買グループテキスト)<br>　※取得できない場合、エラーデータに格納する。次のデータへ処理へ行く<br>　「購買グループテキストが取得できません。　出荷伝票番号:出荷伝票番号の値　明細番号:明細番号の値」 |
+
+### A.6 `外部パラメータ定義`
+
+- Size: 22 rows × 6 columns
+
+| Cell | Value |
+|---|---|
+| `A1` | 外部パラメータ定義 |
+| `A2` | No |
+| `B2` | パラメータ |
+| `C2` | パラメータ名 |
+| `D2` | デフォルト値 |
+| `E2` | 説明 |
+| `A3` | 01 |
+| `B3` | Prop_Input_reprocessFlag |
+| `C3` | 再実行用フラグ |
+| `E3` | 差分データを取得することを避けるため、再実行用とする。 |
+| `A4` | 02 |
+| `B4` | Ex_DocTypeList |
+| `C4` | 出荷伝票タイプ |
+| `D4` | 標準出荷(Z100)、海外発送依頼(Z101)、標準無償出荷(Z102)、在庫転送(プラント間)(Z130)、有償材料支給(Z132)、無償材料支給(Z134) |
+| `A5` | 03 |
+| `B5` | Ex_ShippingPointList |
+| `C5` | 出荷ポイント |
+| `D5` | 有償支給(国内)(1111)、有償支給(外部からBHP)(1113)、本社(1001) |
+| `A6` | 04 |
+| `B6` | Ex_BlockReasonList |
+| `C6` | 出荷ブロック |
+| `D6` | 'Z7' 、'Z9' |
+| `A7` | 05 |
+| `B7` | Ex_ItemCategory |
+| `C7` | 明細カテゴリ |
+| `D7` | Z1AA'(仕入先直送) and 'Z1BA'(無償費用 仕入先直送) and 'Z1KA'(無償 仕入先直送) and　'Z1C7'(預託引渡 BOM子) and 'Z1A7'(子BOM) |
+| `A8` | 06 |
+| `B8` | Ex_Plant |
+| `C8` | プラント |
+| `D8` | 電子管(1001)、HPJ(1006)、固体(1002)、システム(1003)、レーザー(1004) |
+| `F8` | v1.03追加 |
+| `A9` | 07 |
+| `B9` | Ex_FilePath_etd |
+| `C9` | ファイルパス |
+| `D9` | /read_only\IF039_SmartCat_OutboundDeliveryList/etd(電子管) |
+| `F9` | v1.03追加 |
+| `A10` | 08 |
+| `B10` | Ex_FilePath_ssd |
+| `C10` | ファイルパス |
+| `D10` | /read_only\IF039_SmartCat_OutboundDeliveryList/ssd(固体) |
+| `F10` | v1.03追加 |
+| `A11` | 09 |
+| `B11` | Ex_FilePath_sys |
+| `C11` | ファイルパス |
+| `D11` | /read_only\IF039_SmartCat_OutboundDeliveryList/sys(システム) |
+| `F11` | v1.03追加 |
+| `A12` | 10 |
+| `B12` | Ex_FilePath_lpd |
+| `C12` | ファイルパス |
+| `D12` | /read_only\IF039_SmartCat_OutboundDeliveryList/lpd(レーザー) |
+| `A13` | 11 |
+| `A14` | 12 |
+| `A15` | 13 |
+| `A16` | 14 |
+| `A17` | 15 |
+| `A18` | 16 |
+| `A19` | 17 |
+| `A20` | 18 |
+| `A21` | 19 |
+| `A22` | 20 |
+
+### A.7 `File定義`
+
+- Size: 26 rows × 8 columns
+
+| Cell | Value |
+|---|---|
+| `A1` | File定義 |
+| `A2` | No |
+| `B2` | 方式 |
+| `C2` | ファイル名 |
+| `D2` | ファイルパス |
+| `E2` | ファイル形式 |
+| `F2` | プロトコル |
+| `G2` | 文字コード |
+| `H2` | その他ファイル仕様 |
+| `A3` | 01 |
+| `B3` | 書込 |
+| `C3` | 事業部_YYYYMMDD（出庫日）_夜間_国内出荷リスト_success_YYYYMMDDhhmmss.csv<br>※事業部はプラントより決定する<br>etd：電子管(1001)、HPJ(1006)<br>ssd：固体(1002)<br>sys：システム(1003)<br>lpd：レーザー(1004) |
+| `D3` | /read_only\IF039_SmartCat_OutboundDeliveryList/etd(電子管)<br>/read_only\IF039_SmartCat_OutboundDeliveryList/ssd(固体)<br>/read_only\IF039_SmartCat_OutboundDeliveryList/sys(システム)<br>/read_only\IF039_SmartCat_OutboundDeliveryList/lpd(レーザー) |
+| `E3` | CSV |
+| `F3` | SFTP |
+| `G3` | Shift-JIS |
+| `H3` | 正常処理済用<br>カンマ「,」区切りテキストファイル |
+| `A4` | 02 |
+| `B4` | 書込 |
+| `C4` | 営業承認遅延_事業部_YYYYMMDD（出庫日）_夜間_国内出荷リスト_success_YYYYMMDDhhmmss.csv<br>※事業部はプラントより決定する<br>etd：電子管(1001)、HPJ(1006)<br>ssd：固体(1002)<br>sys：システム(1003)<br>lpd：レーザー(1004) |
+| `D4` | /read_only\IF039_SmartCat_OutboundDeliveryList/etd(電子管)<br>/read_only\IF039_SmartCat_OutboundDeliveryList/ssd(固体)<br>/read_only\IF039_SmartCat_OutboundDeliveryList/sys(システム)<br>/read_only\IF039_SmartCat_OutboundDeliveryList/lpd(レーザー) |
+| `E4` | CSV |
+| `F4` | SFTP |
+| `G4` | Shift-JIS |
+| `H4` | 正常処理済用<br>カンマ「,」区切りテキストファイル |
+| `A5` | 03 |
+| `B5` | 書込 |
+| `C5` | 事業部_YYYYMMDD（出庫日）_日中_国内出荷リスト_success_YYYYMMDDhhmmss.csv<br>※事業部はプラントより決定する<br>etd：電子管(1001)、HPJ(1006)<br>ssd：固体(1002)<br>sys：システム(1003)<br>lpd：レーザー(1004) |
+| `D5` | /read_only\IF039_SmartCat_OutboundDeliveryList/etd(電子管)<br>/read_only\IF039_SmartCat_OutboundDeliveryList/ssd(固体)<br>/read_only\IF039_SmartCat_OutboundDeliveryList/sys(システム)<br>/read_only\IF039_SmartCat_OutboundDeliveryList/lpd(レーザー) |
+| `E5` | CSV |
+| `F5` | SFTP |
+| `G5` | Shift-JIS |
+| `H5` | 正常処理済用<br>カンマ「,」区切りテキストファイル |
+| `A6` | 04 |
+| `B6` | 書込 |
+| `C6` | 営業承認遅延_事業部_YYYYMMDD（出庫日）_日中_国内出荷リスト_success_YYYYMMDDhhmmss.csv<br>※事業部はプラントより決定する<br>etd：電子管(1001)、HPJ(1006)<br>ssd：固体(1002)<br>sys：システム(1003)<br>lpd：レーザー(1004) |
+| `D6` | /read_only\IF039_SmartCat_OutboundDeliveryList/etd(電子管)<br>/read_only\IF039_SmartCat_OutboundDeliveryList/ssd(固体)<br>/read_only\IF039_SmartCat_OutboundDeliveryList/sys(システム)<br>/read_only\IF039_SmartCat_OutboundDeliveryList/lpd(レーザー) |
+| `E6` | CSV |
+| `F6` | SFTP |
+| `G6` | Shift-JIS |
+| `H6` | 正常処理済用<br>カンマ「,」区切りテキストファイル |
+| `A7` | 05 |
+| `B7` | 書込 |
+| `C7` | 事業部_YYYYMMDD（出庫日）_夜間_国内出荷リスト_error_YYYYMMDDhhmmss.csv<br>※事業部はプラントより決定する<br>etd：電子管(1001)、HPJ(1006)<br>ssd：固体(1002)<br>sys：システム(1003)<br>lpd：レーザー(1004) |
+| `D7` | /read_only\IF039_SmartCat_OutboundDeliveryList/etd(電子管)<br>/read_only\IF039_SmartCat_OutboundDeliveryList/ssd(固体)<br>/read_only\IF039_SmartCat_OutboundDeliveryList/sys(システム)<br>/read_only\IF039_SmartCat_OutboundDeliveryList/lpd(レーザー) |
+| `E7` | CSV |
+| `F7` | SFTP |
+| `G7` | Shift-JIS |
+| `H7` | エラー格納用<br>カンマ「,」区切りテキストファイル |
+| `A8` | 06 |
+| `B8` | 書込 |
+| `C8` | 営業承認遅延_事業部_YYYYMMDD（出庫日）_夜間_国内出荷リスト_error_YYYYMMDDhhmmss.csv<br>※事業部はプラントより決定する<br>etd：電子管(1001)、HPJ(1006)<br>ssd：固体(1002)<br>sys：システム(1003)<br>lpd：レーザー(1004) |
+| `D8` | /read_only\IF039_SmartCat_OutboundDeliveryList/etd(電子管)<br>/read_only\IF039_SmartCat_OutboundDeliveryList/ssd(固体)<br>/read_only\IF039_SmartCat_OutboundDeliveryList/sys(システム)<br>/read_only\IF039_SmartCat_OutboundDeliveryList/lpd(レーザー) |
+| `E8` | CSV |
+| `F8` | SFTP |
+| `G8` | Shift-JIS |
+| `H8` | エラー格納用<br>カンマ「,」区切りテキストファイル |
+| `A9` | 07 |
+| `B9` | 書込 |
+| `C9` | 事業部_YYYYMMDD（出庫日）_日中_国内出荷リスト_error_YYYYMMDDhhmmss.csv<br>※事業部はプラントより決定する<br>etd：電子管(1001)、HPJ(1006)<br>ssd：固体(1002)<br>sys：システム(1003)<br>lpd：レーザー(1004) |
+| `D9` | /read_only\IF039_SmartCat_OutboundDeliveryList/etd(電子管)<br>/read_only\IF039_SmartCat_OutboundDeliveryList/ssd(固体)<br>/read_only\IF039_SmartCat_OutboundDeliveryList/sys(システム)<br>/read_only\IF039_SmartCat_OutboundDeliveryList/lpd(レーザー) |
+| `E9` | CSV |
+| `F9` | SFTP |
+| `G9` | Shift-JIS |
+| `H9` | エラー格納用<br>カンマ「,」区切りテキストファイル |
+| `A10` | 08 |
+| `B10` | 書込 |
+| `C10` | 営業承認遅延_事業部_YYYYMMDD（出庫日）_日中_国内出荷リスト_error_YYYYMMDDhhmmss.csv<br>※事業部はプラントより決定する<br>etd：電子管(1001)、HPJ(1006)<br>ssd：固体(1002)<br>sys：システム(1003)<br>lpd：レーザー(1004) |
+| `D10` | /read_only\IF039_SmartCat_OutboundDeliveryList/etd(電子管)<br>/read_only\IF039_SmartCat_OutboundDeliveryList/ssd(固体)<br>/read_only\IF039_SmartCat_OutboundDeliveryList/sys(システム)<br>/read_only\IF039_SmartCat_OutboundDeliveryList/lpd(レーザー) |
+| `E10` | CSV |
+| `F10` | SFTP |
+| `G10` | Shift-JIS |
+| `H10` | エラー格納用<br>カンマ「,」区切りテキストファイル |
+| `A11` | 09 |
+| `A12` | 10 |
+| `A13` | 11 |
+| `A14` | 12 |
+| `A15` | 13 |
+| `A16` | 14 |
+| `A17` | 15 |
+| `A18` | 16 |
+| `A19` | 17 |
+| `A20` | 18 |
+| `A21` | 19 |
+| `A22` | 20 |
+| `A23` | 21 |
+| `A24` | 22 |
+| `A25` | 22 |
+| `A26` | 23 |
+
+### A.8 `エラー履歴テーブル仕様`
+
+- Size: 15 rows × 5 columns
+
+| Cell | Value |
+|---|---|
+| `B2` | 出荷リスト海外IF_エラー履歴テーブル(ZSDTHX_0003) |
+| `B3` | 出荷伝票 |
+| `C3` | 明細 |
+| `D3` | データ区分 |
+| `E3` | メッセージ |
+| `B4` | 1200000001 |
+| `C4` | 10 |
+| `D4` | A |
+| `E4` | 事業部出荷場所が取得できません。出荷伝票番号　明細番号 |
+| `B5` | 8000000001 |
+| `C5` | 10 |
+| `D5` | B |
+| `E5` | ユーザ会社名が取得できません。出荷伝票番号　明細番号 |
+| `B6` | ※データ区分が"A"(通常エラーデータ) |
+| `B7` | データ区分が"B"(遅延エラーデータ) |
+| `B9` | パターン１ |
+| `B10` | 通常処理の場合 |
+| `C10` | エラデーターがある場合、エラー履歴テーブルに更新する |
+| `B12` | パターン２ |
+| `B13` | 再実行の場合 |
+| `C13` | ①エラー履歴テーブルから全件データを取得し、再実行対象データとする |
+| `C14` | ②再実行を処理しているため、処理済データとしてエラー履歴テーブルのデータを全件削除する |
+| `C15` | ③再実行処理よりエラーがある場合、エラー履歴テーブルに更新する |
+
+### A.9 `リスト`
+
+- Size: 18 rows × 16 columns
+
+| Cell | Value |
+|---|---|
+| `A1` | 業務分類 |
+| `B1` | データ種類 |
+| `C1` | ASIS/新 |
+| `D1` | 通信プロトコル |
+| `E1` | 起動方法 |
+| `F1` | 実行サイクル |
+| `G1` | 全件/差分 |
+| `H1` | ステップタイプ |
+| `I1` | ファイル形式 |
+| `J1` | プロトコル |
+| `K1` | ファイル方式 |
+| `L1` | 方式(API/DB) |
+| `M1` | ステップタイプ |
+| `N1` | Eventタイプ |
+| `O1` | APIタイプ |
+| `P1` | Split |
+| `A3` | 製造 |
+| `B3` | マスタ |
+| `C3` | ASIS |
+| `D3` | ファイル |
+| `E3` | 時間間隔 |
+| `F3` | 発生ベース |
+| `G3` | 全件 |
+| `H3` | SenderAdapter |
+| `I3` | CSV |
+| `J3` | FTP(Passive) |
+| `K3` | 読込 |
+| `L3` | 読込 |
+| `M3` | SenderAdapter |
+| `N3` | S/4標準 |
+| `O3` | OdataV4 |
+| `P3` | ✓ |
+| `A4` | 販売 |
+| `B4` | トランザクション |
+| `C4` | 新規 |
+| `D4` | HTTP(RestfulAPI) |
+| `E4` | マニュアル |
+| `F4` | 毎時 |
+| `G4` | 差分 |
+| `H4` | ReceiverAdapter |
+| `I4` | TSV |
+| `J4` | SFTP |
+| `K4` | 書込 |
+| `L4` | 登録 |
+| `M4` | ReceiverAdapter |
+| `N4` | カスタム |
+| `O4` | OdataV2 |
+| `A5` | 購買 |
+| `D5` | HTTP(OData) |
+| `E5` | イベント |
+| `F5` | 毎分 |
+| `H5` | 分岐 |
+| `I5` | 固定長 |
+| `K5` | 削除 |
+| `L5` | 変更 |
+| `M5` | マッピング |
+| `O5` | SOAP |
+| `A6` | 財務会計 |
+| `D6` | RFC |
+| `F6` | 日次 |
+| `H6` | マッピング |
+| `I6` | XML |
+| `K6` | その他 |
+| `L6` | 削除 |
+| `M6` | 分岐 |
+| `O6` | BAPI |
+| `A7` | 固定資産 |
+| `D7` | DB接続 |
+| `F7` | 週次 |
+| `I7` | JSON |
+| `L7` | その他 |
+| `M7` | Timer |
+| `O7` | RestfulAPI |
+| `A8` | 管理会計 |
+| `D8` | メール |
+| `F8` | 月次 |
+| `I8` | その他 |
+| `M8` | フィルタ |
+| `O8` | IDOC |
+| `A9` | 人事 |
+| `D9` | SOAP |
+| `F9` | 四半期 |
+| `M9` | その他プロセス処理 |
+| `O9` | その他 |
+| `A10` | 物流 |
+| `D10` | IDOC |
+| `F10` | 半年毎 |
+| `F11` | 年次 |
+| `F12` | その他 |
+
+### A.10 `①受信側記載要領`
+
+- Size: 29 rows × 41 columns
+
+| Cell | Value |
+|---|---|
+| `A1` | インタフェースID |
+| `D1` | DCTIF007 |
+| `G1` | 送信側システム |
+| `L1` | 担当者 |
+| `A2` | インタフェース名 |
+| `D2` | 伝票明細 |
+| `G2` | 受信側システム |
+| `K2` | HAISHAくん（集中配車システム） |
+| `L2` | 担当者 |
+| `A4` | No. |
+| `B4` | Parent Structure |
+| `C4` | 項目名 |
+| `D4` | 項目ID |
+| `E4` | 型 |
+| `F4` | サイズ |
+| `I4` | キー |
+| `J4` | 必須 |
+| `K4` | 項目説明 |
+| `L4` | 書式 |
+| `M4` | 設定値 |
+| `O4` | 備考 |
+| `P4` | IFマッピング情報 |
+| `S4` | トランザクションマッピング情報 |
+| `AA4` | No. |
+| `AB4` | Parent Structure |
+| `AC4` | 項目名 |
+| `AD4` | 項目ID |
+| `AE4` | 型 |
+| `AF4` | サイズ |
+| `AI4` | キー |
+| `AJ4` | 必須 |
+| `AK4` | 項目説明 |
+| `AL4` | 書式 |
+| `AM4` | 設定値 |
+| `AO4` | 備考 |
+| `B5` | ※Idocの場合必須 |
+| `F5` | 整数 |
+| `G5` | 小数 |
+| `H5` | バイト数 |
+| `M5` | 例 |
+| `N5` | 定義 |
+| `P5` | No |
+| `Q5` | 項目名 |
+| `R5` | マッピングルール |
+| `S5` | No |
+| `T5` | 項目グループ |
+| `U5` | 項目名（テキスト） |
+| `V5` | 項目名 |
+| `W5` | テーブル名 |
+| `X5` | データタイプ |
+| `Y5` | 桁数 |
+| `Z5` | マッピングルール |
+| `AB5` | ※Idocの場合必須 |
+| `AF5` | 整数 |
+| `AG5` | 小数 |
+| `AH5` | バイト数 |
+| `AM5` | 例 |
+| `AN5` | 定義 |
+| `A6` | 1 |
+| `AA6` | 1 |
+| `AC6` | 処理日 |
+| `AE6` | CHAR |
+| `AF6` | - |
+| `AG6` | - |
+| `AH6` | 8 |
+| `AI6` | ◎ |
+| `AJ6` | ◎ |
+| `AK6` | 業務日付を設定する。 |
+| `AL6` | YYYYMMDD |
+| `AM6` | 20170327 |
+| `A7` | 2 |
+| `AA7` | 2 |
+| `AC7` | 依頼番号 |
+| `AE7` | CHAR |
+| `AF7` | - |
+| `AG7` | - |
+| `AH7` | 9 |
+| `AI7` | ◎ |
+| `AJ7` | ◎ |
+| `AM7` | 74562 |
+| `A8` | 3 |
+| `AA8` | 3 |
+| `AC8` | 伝票日付 |
+| `AE8` | CHAR |
+| `AF8` | - |
+| `AG8` | - |
+| `AH8` | 8 |
+| `AI8` | ◎ |
+| `AJ8` | ◎ |
+| `AL8` | YYYYMMDD |
+| `AM8` | 20170327 |
+| `A9` | 4 |
+| `AA9` | 4 |
+| `AC9` | 伝票番号 |
+| `AE9` | CHAR |
+| `AF9` | - |
+| `AG9` | - |
+| `AH9` | 7 |
+| `AI9` | ◎ |
+| `AJ9` | ◎ |
+| `AM9` | 5812827 |
+| `A10` | 5 |
+| `AA10` | 5 |
+| `AC10` | 伝票番号枝番号 |
+| `AE10` | CHAR |
+| `AF10` | - |
+| `AG10` | - |
+| `AH10` | 2 |
+| `AI10` | ◎ |
+| `AJ10` | ◎ |
+| `AM10` | 00 |
+| `A11` | 6 |
+| `AA11` | 6 |
+| `AC11` | 履歴番号 |
+| `AE11` | CHAR |
+| `AF11` | - |
+| `AG11` | - |
+| `AH11` | 2 |
+| `AI11` | ◎ |
+| `AJ11` | ◎ |
+| `AM11` | 03 |
+| `A12` | 7 |
+| `AA12` | 7 |
+| `AC12` | 明細番号 |
+| `AE12` | CHAR |
+| `AF12` | - |
+| `AG12` | - |
+| `AH12` | 2 |
+| `AI12` | ◎ |
+| `AJ12` | ◎ |
+| `AM12` | 01 |
+| `A13` | 8 |
+| `AA13` | 8 |
+| `AC13` | 商品コード |
+| `AE13` | CHAR |
+| `AF13` | - |
+| `AG13` | - |
+| `AH13` | 8 |
+| `AI13` | - |
+| `AJ13` | ◎ |
+| `AK13` | ※実データは6桁で連携 |
+| `AM13` | 335204 |
+| `AO13` | ※IF定義書上は8桁で定義されているが、サンプルデータは6桁となっていたため、実態は6桁。 |
+| `A14` | 9 |
+| `AA14` | 9 |
+| `AC14` | 商品名 |
+| `AE14` | CHAR |
+| `AF14` | - |
+| `AG14` | - |
+| `AH14` | 32 |
+| `AI14` | - |
+| `AJ14` | - |
+| `AM14` | キリン午後あたたかミル３４５Ｐ |
+| `A15` | 10 |
+| `AA15` | 10 |
+| `AC15` | 商品分類区分 |
+| `AE15` | CHAR |
+| `AF15` | - |
+| `AG15` | - |
+| `AH15` | 2 |
+| `AI15` | - |
+| `AJ15` | - |
+| `AM15` | 01 |
+| `A16` | 11 |
+| `AA16` | 11 |
+| `AC16` | 商品分類区分名称 |
+| `AE16` | CHAR |
+| `AF16` | - |
+| `AG16` | - |
+| `AH16` | 20 |
+| `AI16` | - |
+| `AJ16` | - |
+| `AM16` | 製品 |
+| `A17` | 12 |
+| `AA17` | 12 |
+| `AC17` | ケース数 |
+| `AE17` | CHAR |
+| `AF17` | - |
+| `AG17` | - |
+| `AH17` | 5 |
+| `AI17` | - |
+| `AJ17` | ◎ |
+| `AM17` | 64 |
+| `A18` | 13 |
+| `AA18` | 13 |
+| `AC18` | バラ数 |
+| `AE18` | CHAR |
+| `AF18` | - |
+| `AG18` | - |
+| `AH18` | 5 |
+| `AI18` | - |
+| `AJ18` | ◎ |
+| `AM18` | 0 |
+| `A19` | 14 |
+| `AA19` | 14 |
+| `AC19` | マル特区分 |
+| `AE19` | CHAR |
+| `AF19` | - |
+| `AG19` | - |
+| `AH19` | 1 |
+| `AI19` | - |
+| `AJ19` | - |
+| `AN19` | 0：無効、1：有効（マル特） |
+| `AF29` | 2017/5/18追記：型TIMESTAMPの場合、サイズは未記載とする |
+
+### A.11 `②トランザクション定義書とのマッピング内容記載要領`
+
+- Size: 29 rows × 41 columns
+
+| Cell | Value |
+|---|---|
+| `A1` | インタフェースID |
+| `D1` | DCTIF007 |
+| `G1` | 送信側システム |
+| `L1` | 担当者 |
+| `A2` | インタフェース名 |
+| `D2` | 伝票明細 |
+| `G2` | 受信側システム |
+| `K2` | HAISHAくん（集中配車システム） |
+| `L2` | 担当者 |
+| `A4` | No. |
+| `B4` | Parent Structure |
+| `C4` | 項目名 |
+| `D4` | 項目ID |
+| `E4` | 型 |
+| `F4` | サイズ |
+| `I4` | キー |
+| `J4` | 必須 |
+| `K4` | 項目説明 |
+| `L4` | 書式 |
+| `M4` | 設定値 |
+| `O4` | 備考 |
+| `P4` | IFマッピング情報 |
+| `S4` | トランザクションマッピング情報 |
+| `AA4` | No. |
+| `AB4` | Parent Structure |
+| `AC4` | 項目名 |
+| `AD4` | 項目ID |
+| `AE4` | 型 |
+| `AF4` | サイズ |
+| `AI4` | キー |
+| `AJ4` | 必須 |
+| `AK4` | 項目説明 |
+| `AL4` | 書式 |
+| `AM4` | 設定値 |
+| `AO4` | 備考 |
+| `B5` | ※Idocの場合必須 |
+| `F5` | 整数 |
+| `G5` | 小数 |
+| `H5` | バイト数 |
+| `M5` | 例 |
+| `N5` | 定義 |
+| `P5` | No |
+| `Q5` | 項目名 |
+| `R5` | マッピングルール |
+| `S5` | No |
+| `T5` | 項目グループ |
+| `U5` | 項目名（テキスト） |
+| `V5` | 項目名 |
+| `W5` | テーブル名 |
+| `X5` | データタイプ |
+| `Y5` | 桁数 |
+| `Z5` | マッピングルール |
+| `AB5` | ※Idocの場合必須 |
+| `AF5` | 整数 |
+| `AG5` | 小数 |
+| `AH5` | バイト数 |
+| `AM5` | 例 |
+| `AN5` | 定義 |
+| `A6` | 1 |
+| `T6` | 入出庫伝票ヘッダ |
+| `U6` | 転記日付 |
+| `V6` | BUDAT |
+| `W6` | MKPF |
+| `X6` | DATS |
+| `Y6` | 8 |
+| `AA6` | 1 |
+| `AC6` | 処理日 |
+| `AE6` | CHAR |
+| `AF6` | - |
+| `AG6` | - |
+| `AH6` | 8 |
+| `AI6` | ◎ |
+| `AJ6` | ◎ |
+| `AK6` | 業務日付を設定する。 |
+| `AL6` | YYYYMMDD |
+| `AM6` | 20170327 |
+| `A7` | 2 |
+| `T7` | 入出庫伝票ヘッダ |
+| `U7` | 入出庫伝票 |
+| `V7` | MBLNR |
+| `W7` | MKPF |
+| `X7` | CHAR |
+| `Y7` | 10 |
+| `Z7` | 先頭1ケタを削除してセット |
+| `AA7` | 2 |
+| `AC7` | 依頼番号 |
+| `AE7` | CHAR |
+| `AF7` | - |
+| `AG7` | - |
+| `AH7` | 9 |
+| `AI7` | ◎ |
+| `AJ7` | ◎ |
+| `AM7` | 74562 |
+| `A8` | 3 |
+| `T8` | 入出庫伝票ヘッダ |
+| `U8` | 伝票日付 |
+| `V8` | BLDAT |
+| `W8` | MKPF |
+| `X8` | DATS |
+| `Y8` | 8 |
+| `AA8` | 3 |
+| `AC8` | 伝票日付 |
+| `AE8` | CHAR |
+| `AF8` | - |
+| `AG8` | - |
+| `AH8` | 8 |
+| `AI8` | ◎ |
+| `AJ8` | ◎ |
+| `AL8` | YYYYMMDD |
+| `AM8` | 20170327 |
+| `A9` | 4 |
+| `T9` | 入出庫伝票ヘッダ |
+| `U9` | 入出庫伝票 |
+| `V9` | MBLNR |
+| `W9` | MKPF |
+| `X9` | CHAR |
+| `Y9` | 10 |
+| `Z9` | 先頭3ケタを削除してセット |
+| `AA9` | 4 |
+| `AC9` | 伝票番号 |
+| `AE9` | CHAR |
+| `AF9` | - |
+| `AG9` | - |
+| `AH9` | 7 |
+| `AI9` | ◎ |
+| `AJ9` | ◎ |
+| `AM9` | 5812827 |
+| `A10` | 5 |
+| `Z10` | <ブランク> |
+| `AA10` | 5 |
+| `AC10` | 伝票番号枝番号 |
+| `AE10` | CHAR |
+| `AF10` | - |
+| `AG10` | - |
+| `AH10` | 2 |
+| `AI10` | ◎ |
+| `AJ10` | ◎ |
+| `AM10` | 00 |
+| `A11` | 6 |
+| `Z11` | <ブランク> |
+| `AA11` | 6 |
+| `AC11` | 履歴番号 |
+| `AE11` | CHAR |
+| `AF11` | - |
+| `AG11` | - |
+| `AH11` | 2 |
+| `AI11` | ◎ |
+| `AJ11` | ◎ |
+| `AM11` | 03 |
+| `A12` | 7 |
+| `T12` | 入出庫伝票明細 |
+| `U12` | 明細番号 |
+| `V12` | ZEILE |
+| `W12` | MSEG |
+| `X12` | NUMC |
+| `Y12` | 4 |
+| `Z12` | 先頭2ケタを削除してセット |
+| `AA12` | 7 |
+| `AC12` | 明細番号 |
+| `AE12` | CHAR |
+| `AF12` | - |
+| `AG12` | - |
+| `AH12` | 2 |
+| `AI12` | ◎ |
+| `AJ12` | ◎ |
+| `AM12` | 01 |
+| `A13` | 8 |
+| `T13` | 入出庫伝票明細 |
+| `U13` | 品目コード |
+| `V13` | MATNR |
+| `W13` | MSEG |
+| `X13` | CHAR |
+| `Y13` | 40 |
+| `Z13` | 商品変換テーブルを会社コードと品目コードで検索し抽出された商品コードをセットする。商品コードが抽出されない場合は＜ブランク＞をセット |
+| `AA13` | 8 |
+| `AC13` | 商品コード |
+| `AE13` | CHAR |
+| `AF13` | - |
+| `AG13` | - |
+| `AH13` | 8 |
+| `AI13` | - |
+| `AJ13` | ◎ |
+| `AK13` | ※実データは6桁で連携 |
+| `AM13` | 335204 |
+| `AO13` | ※IF定義書上は8桁で定義されているが、サンプルデータは6桁となっていたため、実態は6桁。 |
+| `A14` | 9 |
+| `Z14` | 品目コードより抽出された商品コードで商品変換テーブルより抽出した商品名称をセット。商品コードが抽出されない場合は＜ブランク＞をセット |
+| `AA14` | 9 |
+| `AC14` | 商品名 |
+| `AE14` | CHAR |
+| `AF14` | - |
+| `AG14` | - |
+| `AH14` | 32 |
+| `AI14` | - |
+| `AJ14` | - |
+| `AM14` | キリン午後あたたかミル３４５Ｐ |
+| `A15` | 10 |
+| `Z15` | 固定値「V」 |
+| `AA15` | 10 |
+| `AC15` | 商品分類区分 |
+| `AE15` | CHAR |
+| `AF15` | - |
+| `AG15` | - |
+| `AH15` | 2 |
+| `AI15` | - |
+| `AJ15` | - |
+| `AM15` | 01 |
+| `A16` | 11 |
+| `Z16` | 固定値「飲料」 |
+| `AA16` | 11 |
+| `AC16` | 商品分類区分名称 |
+| `AE16` | CHAR |
+| `AF16` | - |
+| `AG16` | - |
+| `AH16` | 20 |
+| `AI16` | - |
+| `AJ16` | - |
+| `AM16` | 製品 |
+| `A17` | 12 |
+| `T17` | 入出庫伝票明細 |
+| `U17` | 数量 |
+| `V17` | MENGE |
+| `W17` | MSEG |
+| `X17` | QUAN |
+| `Y17` | 13 |
+| `Z17` | IF数量単位変換テーブルを基本数量単位で検索しIF換算係数を取得し、「IF換算係数x数量」の値をセットする |
+| `AA17` | 12 |
+| `AC17` | ケース数 |
+| `AE17` | CHAR |
+| `AF17` | - |
+| `AG17` | - |
+| `AH17` | 5 |
+| `AI17` | - |
+| `AJ17` | ◎ |
+| `AM17` | 64 |
+| `A18` | 13 |
+| `T18` | 入出庫伝票明細 |
+| `U18` | 基本数量単位 |
+| `V18` | MEINS |
+| `W18` | MSEG |
+| `X18` | UNIT |
+| `Y18` | 3 |
+| `A19` | 14 |
+| `AA19` | 13 |
+| `AC19` | バラ数 |
+| `AE19` | CHAR |
+| `AF19` | - |
+| `AG19` | - |
+| `AH19` | 5 |
+| `AI19` | - |
+| `AJ19` | ◎ |
+| `AM19` | 0 |
