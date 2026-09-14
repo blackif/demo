@@ -57,3 +57,5 @@ jobs:
             git commit -m "chore: convert demo1 Excel document to Markdown"
             git push
           fi
+
+      # The workflow is intentionally scoped to the demo1 documents folder.
