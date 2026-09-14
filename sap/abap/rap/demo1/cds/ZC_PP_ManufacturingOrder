@@ -1,0 +1,39 @@
+@AccessControl.authorizationCheck: #NOT_REQUIRED
+@EndUserText.label: 'Manufacturing Order'
+define root view entity ZC_PP_ManufacturingOrder
+  provider contract transactional_query 
+  as projection on ZI_PP_ManufacturingOrder
+{
+  key ManufacturingOrder,
+      ManufacturingOrderCategory,
+      ManufacturingOrderType,
+      Product,
+      ProductName,
+      ProductionPlant,
+      StorageLocation,
+      MfgOrderPlannedTotalQty,
+      ProductionUnit,
+      MfgOrderPlannedStartDate,
+      MfgOrderPlannedEndDate,
+      MrpController,
+      ProductionSupervisor,
+      ProductionVersion,
+      ProductionVersionText,
+      SalesOrder,
+      SalesOrderItem,
+      Tdname,
+      @ObjectModel.virtualElement: true
+      @ObjectModel.virtualElementCalculatedBy: 'ABAP:Z_PP_LONGTEXT_GET'
+      virtual LongText: abap.string,
+      PlannedOrder,
+      Created,
+      Released,
+      TechnicallyCompleted,
+      DeletionFlag,
+      DefectiveRatio,
+      InventoryUsabilityCode,
+      InventoryUsabilityCodeName,
+      OrderIssuanceDate,
+      Reservation,
+      LastChangeTimestamp
+}
