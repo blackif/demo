@@ -67,7 +67,10 @@ flowchart TD
 3. Projection View `ZC_PP_ManufacturingOrder` 作为对外数据模型。
 4. `ZC_PP_ManufacturingOrder` 基于 `ZI_PP_ManufacturingOrder`。
 5. `ZI_PP_ManufacturingOrder` 从 `I_ManufacturingOrder` 获取生产订单，并通过 Join / Association 获取状态、生产版本、产品文本、库存可用性文本、长文本名称等数据。
-6. RAP Service 通过 OData V4 Web API 返回最终结果。
+6. Virtual Element `LongText` 不直接从数据库读取，而是在运行时由 RAP/SADL 机制计算。
+7. SADL Exit `Z_PP_LONGTEXT_GET` 实现 `IF_SADL_EXIT_CALC_ELEMENT_READ`，由 SADL 在处理 Virtual Element 时调用 `calculate` 等方法。
+8. `READ_TEXT` 根据生产订单对应的 `Tdname` 读取长文本内容，并将结果写入 Virtual Element `LongText`。
+9. RAP Service 最终通过 OData V4 Web API 返回包含计算结果的数据。
 
 ## 目录结构
 
