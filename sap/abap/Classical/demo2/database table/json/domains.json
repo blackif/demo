@@ -28,8 +28,8 @@
       "Case_sensitive": "X",
       "Value_Range": {
         "Single": [
-          {"Fixed": "0", "description": "P，Parameter"},
-          {"Fixed": "1", "description": "S，Select option"}
+          {"Fixed": "P", "description": "Parameter"},
+          {"Fixed": "S", "description": "Select option"}
         ],
         "Intervals": [{"Lower_limit": "", "Uppr_limit": "", "description": ""}],
         "Value_table": ""
@@ -63,8 +63,8 @@
       "Case_sensitive": "",
       "Value_Range": {
         "Single": [
-          {"Fixed": "0", "description": "I，Range limit included"},
-          {"Fixed": "1", "description": "E，Range limit excluded"}
+          {"Fixed": "I", "description": "Range limit included"},
+          {"Fixed": "E", "description": "Range limit excluded"}
         ],
         "Intervals": [{"Lower_limit": "", "Uppr_limit": "", "description": ""}],
         "Value_table": ""
@@ -82,16 +82,16 @@
       "Case_sensitive": "",
       "Value_Range": {
         "Single": [
-          {"Fixed": "0", "description": "EQ，Equals"},
-          {"Fixed": "1", "description": "BT，Between ... and ..."},
-          {"Fixed": "2", "description": "CP，Contains the template"},
-          {"Fixed": "3", "description": "LE，Less than or equal to"},
-          {"Fixed": "4", "description": "GE，Greater than or equal to"},
-          {"Fixed": "5", "description": "NE，Not equal to"},
-          {"Fixed": "6", "description": "NB，Not between ... and ..."},
-          {"Fixed": "7", "description": "NP，Does not contain the template"},
-          {"Fixed": "8", "description": "GT，Greater than"},
-          {"Fixed": "9", "description": "LT，Less than"}
+          {"Fixed": "EQ", "description": "Equals"},
+          {"Fixed": "BT", "description": "Between ... and ..."},
+          {"Fixed": "CP", "description": "Contains the template"},
+          {"Fixed": "LE", "description": "Less than or equal to"},
+          {"Fixed": "GE", "description": "Greater than or equal to"},
+          {"Fixed": "NE", "description": "Not equal to"},
+          {"Fixed": "NB", "description": "Not between ... and ..."},
+          {"Fixed": "NP", "description": "Does not contain the template"},
+          {"Fixed": "GT", "description": "Greater than"},
+          {"Fixed": "LT", "description": "Less than"}
         ],
         "Intervals": [{"Lower_limit": "", "Uppr_limit": "", "description": ""}],
         "Value_table": ""
