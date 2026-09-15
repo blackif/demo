@@ -23,6 +23,8 @@
 ```text
 VOFM Routine 901
         ↓
+Include ysd00XX_001_01
+        ↓
 YCLSD00XX_001_01
         ↓
 Customer Group 2 (KVGR2)
@@ -36,6 +38,8 @@ Billing Split
 
 ```text
 VOFM Routine 902
+        ↓
+Include ysd00XX_001_02
         ↓
 YCLSD00XX_001_01
         ↓
@@ -56,30 +60,32 @@ Billing Split
 
 ```mermaid
 flowchart TD
-    A1[VOFM Routine 901] --> B1[YCLSD00XX_001_01]
-    B1 --> C1[Customer Group 2 KVGR2]
-    C1 --> D1[set VBRK-ZUKRI]
-    D1 --> E1[Billing Split]
+    A1[VOFM Routine 901] --> B1[Include ysd00XX_001_01]
+    B1 --> C1[YCLSD00XX_001_01]
+    C1 --> D1[Customer Group 2 KVGR2]
+    D1 --> E1[set VBRK-ZUKRI]
+    E1 --> F1[Billing Split]
 ```
 
 ### Case 2：收货标准 902
 
 ```mermaid
 flowchart TD
-    A2[VOFM Routine 902] --> B2[YCLSD00XX_001_01]
-    B2 --> C2[Customer Group 2 KVGR2]
-    C2 --> D2[set VBRK-ZUKRI]
-    D2 --> E2{LIKP-PODAT exists?}
-    E2 -- Yes --> F2[set VBRK-FKDAT = LIKP-PODAT]
-    E2 -- No --> G2[Keep existing Billing Date]
-    F2 --> H2[Billing Split]
-    G2 --> H2
+    A2[VOFM Routine 902] --> B2[Include ysd00XX_001_02]
+    B2 --> C2[YCLSD00XX_001_01]
+    C2 --> D2[Customer Group 2 KVGR2]
+    D2 --> E2[set VBRK-ZUKRI]
+    E2 --> F2{LIKP-PODAT exists?}
+    F2 -- Yes --> G2[set VBRK-FKDAT = LIKP-PODAT]
+    F2 -- No --> H2[Keep existing Billing Date]
+    G2 --> I2[Billing Split]
+    H2 --> I2
 ```
 
 ## 简要调用关系
 
-1. **Case 1：出库标准 901**：VOFM Routine 901 调用 ABAP Class `YCLSD00XX_001_01`，根据客户组2（`KVGR2`）设置 Billing Document Header (`VBRK`) 的组合条件 `VBRK-ZUKRI`，从而控制发票是否需要分开。
-2. **Case 2：收货标准 902**：VOFM Routine 902 调用 ABAP Class `YCLSD00XX_001_01`，首先根据客户组2（`KVGR2`）设置 `VBRK-ZUKRI`，然后检查收货日（POD Date，`LIKP-PODAT`）。当 `LIKP-PODAT` 存在时，将其设置为 Billing Date `VBRK-FKDAT`；如果不存在，则保持原有 Billing Date 不变。
+1. **Case 1：出库标准 901**：VOFM Routine 901 通过 Include `ysd00XX_001_01` 调用 ABAP Class `YCLSD00XX_001_01`，根据客户组2（`KVGR2`）设置 Billing Document Header (`VBRK`) 的组合条件 `VBRK-ZUKRI`，从而控制发票是否需要分开。
+2. **Case 2：收货标准 902**：VOFM Routine 902 通过 Include `ysd00XX_001_02` 调用 ABAP Class `YCLSD00XX_001_01`，首先根据客户组2（`KVGR2`）设置 `VBRK-ZUKRI`，然后检查收货日（POD Date，`LIKP-PODAT`）。当 `LIKP-PODAT` 存在时，将其设置为 Billing Date `VBRK-FKDAT`；如果不存在，则保持原有 Billing Date 不变。
 
 ## 目录结构
 
@@ -87,5 +93,8 @@ flowchart TD
 demo1/
 ├── class/
 │   └── YCLSD00XX_001_01.abap
+├── pgm/
+│   ├── ysd00XX_001_01.abap
+│   └── ysd00XX_001_02.abap
 └── README.md
 ```
