@@ -1,11 +1,125 @@
 {
   "object": "Domains",
   "items": [
-    {"name":"ZDVARI_NAME","data_type":"CHAR","length":30,"decimal":0,"output_length":30,"more":"","description":"バリアント変数名"},
-    {"name":"ZDSEL_TYPE","data_type":"CHAR","length":1,"decimal":0,"output_length":1,"more":"X","description":"選択タイプ"},
-    {"name":"ZDSEL_NUMB","data_type":"NUMC","length":3,"decimal":0,"output_length":3,"more":"","description":"現在の選択番号"},
-    {"name":"ZDDDSIGN","data_type":"CHAR","length":1,"decimal":0,"output_length":1,"more":"X","description":"範囲データ型の行データ型: タイプ SIGN のコンポーネント"},
-    {"name":"ZDDDOPTION","data_type":"CHAR","length":2,"decimal":0,"output_length":2,"more":"X","description":"範囲データ型の行データ型のタイプ OPTION のコンポーネント"},
-    {"name":"ZDVARI_VAL_255","data_type":"CHAR","length":255,"decimal":0,"output_length":255,"more":"","description":"選択バリアント: 項目内容(LOW/HIGH)"}
+    {
+      "name": "ZDVARI_NAME",
+      "data_type": "CHAR",
+      "length": 30,
+      "decimal": 0,
+      "output_length": 30,
+      "Routine": "",
+      "Sign": "",
+      "Case_sensitive": "",
+      "Value_Range": {
+        "Single": [
+          {"Fixed": "", "description": ""}
+        ],
+        "Intervals": [
+          {"Lower_limit": "", "Uppr_limit": "", "description": ""}
+        ],
+        "Value_table": ""
+      },
+      "description": "バリアント変数名"
+    },
+    {
+      "name": "ZDSEL_TYPE",
+      "data_type": "CHAR",
+      "length": 1,
+      "decimal": 0,
+      "output_length": 1,
+      "Routine": "",
+      "Sign": "",
+      "Case_sensitive": "",
+      "Value_Range": {
+        "Single": [
+          {"Fixed": "", "description": ""}
+        ],
+        "Intervals": [
+          {"Lower_limit": "", "Uppr_limit": "", "description": ""}
+        ],
+        "Value_table": ""
+      },
+      "description": "選択タイプ"
+    },
+    {
+      "name": "ZDSEL_NUMB",
+      "data_type": "NUMC",
+      "length": 3,
+      "decimal": 0,
+      "output_length": 3,
+      "Routine": "",
+      "Sign": "",
+      "Case_sensitive": "",
+      "Value_Range": {
+        "Single": [
+          {"Fixed": "", "description": ""}
+        ],
+        "Intervals": [
+          {"Lower_limit": "", "Uppr_limit": "", "description": ""}
+        ],
+        "Value_table": ""
+      },
+      "description": "現在の選択番号"
+    },
+    {
+      "name": "ZDDDSIGN",
+      "data_type": "CHAR",
+      "length": 1,
+      "decimal": 0,
+      "output_length": 1,
+      "Routine": "",
+      "Sign": "",
+      "Case_sensitive": "",
+      "Value_Range": {
+        "Single": [
+          {"Fixed": "", "description": ""}
+        ],
+        "Intervals": [
+          {"Lower_limit": "", "Uppr_limit": "", "description": ""}
+        ],
+        "Value_table": ""
+      },
+      "description": "範囲データ型の行データ型: タイプ SIGN のコンポーネント"
+    },
+    {
+      "name": "ZDDDOPTION",
+      "data_type": "CHAR",
+      "length": 2,
+      "decimal": 0,
+      "output_length": 2,
+      "Routine": "",
+      "Sign": "",
+      "Case_sensitive": "",
+      "Value_Range": {
+        "Single": [
+          {"Fixed": "", "description": ""}
+        ],
+        "Intervals": [
+          {"Lower_limit": "", "Uppr_limit": "", "description": ""}
+        ],
+        "Value_table": ""
+      },
+      "description": "範囲データ型の行データ型のタイプ OPTION のコンポーネント"
+    },
+    {
+      "name": "ZDVARI_VAL_255",
+      "data_type": "CHAR",
+      "length": 255,
+      "decimal": 0,
+      "output_length": 255,
+      "Routine": "",
+      "Sign": "",
+      "Case_sensitive": "",
+      "Value_Range": {
+        "Single": [
+          {"Fixed": "", "description": ""}
+        ],
+        "Intervals": [
+          {"Lower_limit": "", "Uppr_limit": "", "description": ""}
+        ],
+        "Value_table": ""
+      },
+      "description": "選択バリアント: 項目内容(LOW/HIGH)"
+    }
   ]
 }
