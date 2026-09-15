@@ -1,11 +1,77 @@
 {
   "object": "Data Elements",
   "items": [
-    {"name":"ZEVARI_NAME","domain":"ZDVARI_NAME","length":30,"decimal":0,"description":"バリアント変数名"},
-    {"name":"ZESEL_TYPE","domain":"ZDSEL_TYPE","length":1,"decimal":0,"description":"選択タイプ"},
-    {"name":"ZESEL_NUMB","domain":"ZDSEL_NUMB","length":3,"decimal":0,"description":"現在の選択番号"},
-    {"name":"ZEDDSIGN","domain":"ZDDDSIGN","length":1,"decimal":0,"description":"範囲データ型の行データ型: タイプ SIGN のコンポーネント"},
-    {"name":"ZEDDOPTION","domain":"ZDDDOPTION","length":2,"decimal":0,"description":"範囲データ型の行データ型のタイプ OPTION のコンポーネント"},
-    {"name":"ZEVARI_VAL_255","domain":"ZDVARI_VAL_255","length":255,"decimal":0,"description":"選択バリアント: 項目内容(LOW/HIGH)"}
+    {
+      "name": "ZEVARI_NAME",
+      "domain": "ZDVARI_NAME",
+      "built_in_type": {"Data_type": "CHAR", "Length": "30"},
+      "reference_type": "",
+      "reference_built_in_type": {"Data_type": "", "Length": ""},
+      "search_help": {"name": "", "Parameters": ""},
+      "parameter_id": "",
+      "field_label": {"short": "", "mediud": "", "long": "", "heading": ""},
+      "decimal": 0,
+      "description": "バリアント変数名"
+    },
+    {
+      "name": "ZESEL_TYPE",
+      "domain": "ZDSEL_TYPE",
+      "built_in_type": {"Data_type": "CHAR", "Length": "1"},
+      "reference_type": "",
+      "reference_built_in_type": {"Data_type": "", "Length": ""},
+      "search_help": {"name": "", "Parameters": ""},
+      "parameter_id": "",
+      "field_label": {"short": "", "mediud": "", "long": "", "heading": ""},
+      "decimal": 0,
+      "description": "選択タイプ"
+    },
+    {
+      "name": "ZESEL_NUMB",
+      "domain": "ZDSEL_NUMB",
+      "built_in_type": {"Data_type": "NUMC", "Length": "3"},
+      "reference_type": "",
+      "reference_built_in_type": {"Data_type": "", "Length": ""},
+      "search_help": {"name": "", "Parameters": ""},
+      "parameter_id": "",
+      "field_label": {"short": "", "mediud": "", "long": "", "heading": ""},
+      "decimal": 0,
+      "description": "現在の選択番号"
+    },
+    {
+      "name": "ZEDDSIGN",
+      "domain": "ZDDDSIGN",
+      "built_in_type": {"Data_type": "CHAR", "Length": "1"},
+      "reference_type": "",
+      "reference_built_in_type": {"Data_type": "", "Length": ""},
+      "search_help": {"name": "", "Parameters": ""},
+      "parameter_id": "",
+      "field_label": {"short": "", "mediud": "", "long": "", "heading": ""},
+      "decimal": 0,
+      "description": "範囲データ型の行データ型: タイプ SIGN のコンポーネント"
+    },
+    {
+      "name": "ZEDDOPTION",
+      "domain": "ZDDDOPTION",
+      "built_in_type": {"Data_type": "CHAR", "Length": "2"},
+      "reference_type": "",
+      "reference_built_in_type": {"Data_type": "", "Length": ""},
+      "search_help": {"name": "", "Parameters": ""},
+      "parameter_id": "",
+      "field_label": {"short": "", "mediud": "", "long": "", "heading": ""},
+      "decimal": 0,
+      "description": "範囲データ型の行データ型のタイプ OPTION のコンポーネント"
+    },
+    {
+      "name": "ZEVARI_VAL_255",
+      "domain": "ZDVARI_VAL_255",
+      "built_in_type": {"Data_type": "CHAR", "Length": "255"},
+      "reference_type": "",
+      "reference_built_in_type": {"Data_type": "", "Length": ""},
+      "search_help": {"name": "", "Parameters": ""},
+      "parameter_id": "",
+      "field_label": {"short": "", "mediud": "", "long": "", "heading": ""},
+      "decimal": 0,
+      "description": "選択バリアント: 項目内容(LOW/HIGH)"
+    }
   ]
 }
