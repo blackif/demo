@@ -1,0 +1,21 @@
+{
+  "object": "Database Table",
+  "name": "yxacmn0001_001",
+  "label": "Table of Variant Variables",
+  "technical_settings": {
+    "delivery_class": "C",
+    "data_maintenance": "ALLOWED",
+    "enhancement_category": "#NOT_EXTENSIBLE",
+    "table_category": "#TRANSPARENT"
+  },
+  "fields": [
+    {"name":"MANDT","data_element":"MANDT","data_type":"CLNT","length":3,"decimal":0,"key":true},
+    {"name":"NAME","data_element":"ZEVARI_NAME","data_type":"CHAR","length":30,"decimal":0,"key":true},
+    {"name":"TYPE","data_element":"ZESEL_TYPE","data_type":"CHAR","length":1,"decimal":0,"key":true},
+    {"name":"NUMB","data_element":"ZESEL_NUMB","data_type":"NUMC","length":3,"decimal":0,"key":true},
+    {"name":"SIGN","data_element":"ZEDDSIGN","data_type":"CHAR","length":1,"decimal":0,"key":false},
+    {"name":"OPTI","data_element":"ZEDDOPTION","data_type":"CHAR","length":2,"decimal":0,"key":false},
+    {"name":"LOW","data_element":"ZEVARI_VAL_255","data_type":"CHAR","length":255,"decimal":0,"key":false},
+    {"name":"HIGH","data_element":"ZEVARI_VAL_255","data_type":"CHAR","length":255,"decimal":0,"key":false}
+  ]
+}
