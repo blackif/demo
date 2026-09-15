@@ -27,7 +27,7 @@ YCLSD00XX_001_01
         ↓
 Customer Group 2 (KVGR2)
         ↓
-set Billing Document Header (VBRK)
+set Billing Document Header (VBRK-ZUKRI)
         ↓
 Billing Split
 ```
@@ -41,7 +41,11 @@ YCLSD00XX_001_01
         ↓
 Customer Group 2 (KVGR2)
         ↓
-set Billing Document Header (VBRK)
+set Billing Document Header (VBRK-ZUKRI)
+        ↓
+POD Date (LIKP-PODAT)
+        ↓
+set Billing Date (VBRK-FKDAT)
         ↓
 Billing Split
 ```
@@ -54,7 +58,7 @@ Billing Split
 flowchart TD
     A1[VOFM Routine 901] --> B1[YCLSD00XX_001_01]
     B1 --> C1[Customer Group 2 KVGR2]
-    C1 --> D1[set Billing Document Header VBRK]
+    C1 --> D1[set VBRK-ZUKRI]
     D1 --> E1[Billing Split]
 ```
 
@@ -64,14 +68,18 @@ flowchart TD
 flowchart TD
     A2[VOFM Routine 902] --> B2[YCLSD00XX_001_01]
     B2 --> C2[Customer Group 2 KVGR2]
-    C2 --> D2[set Billing Document Header VBRK]
-    D2 --> E2[Billing Split]
+    C2 --> D2[set VBRK-ZUKRI]
+    D2 --> E2{LIKP-PODAT exists?}
+    E2 -- Yes --> F2[set VBRK-FKDAT = LIKP-PODAT]
+    E2 -- No --> G2[Keep existing Billing Date]
+    F2 --> H2[Billing Split]
+    G2 --> H2
 ```
 
 ## 简要调用关系
 
-1. **Case 1：出库标准 901**：VOFM Routine 901 调用 ABAP Class `YCLSD00XX_001_01`，根据客户组2（`KVGR2`）设置 Billing Document Header (`VBRK`) 的组合条件，从而控制发票是否需要分开。
-2. **Case 2：收货标准 902**：VOFM Routine 902 调用 ABAP Class `YCLSD00XX_001_01`，同样根据客户组2（`KVGR2`）设置 Billing Document Header (`VBRK`) 的组合条件，从而控制发票是否需要分开。
+1. **Case 1：出库标准 901**：VOFM Routine 901 调用 ABAP Class `YCLSD00XX_001_01`，根据客户组2（`KVGR2`）设置 Billing Document Header (`VBRK`) 的组合条件 `VBRK-ZUKRI`，从而控制发票是否需要分开。
+2. **Case 2：收货标准 902**：VOFM Routine 902 调用 ABAP Class `YCLSD00XX_001_01`，首先根据客户组2（`KVGR2`）设置 `VBRK-ZUKRI`，然后检查收货日（POD Date，`LIKP-PODAT`）。当 `LIKP-PODAT` 存在时，将其设置为 Billing Date `VBRK-FKDAT`；如果不存在，则保持原有 Billing Date 不变。
 
 ## 目录结构
 
