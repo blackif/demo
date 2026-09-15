@@ -7,7 +7,7 @@
 | AbapCatalog | Value | 内容说明 |
 |---|---|---|
 | DeliveryClass | C | カスタマイジング、更新はカスタマのみ |
-| DataMaintenance | X, ALLOWED |  |
+| DataMaintenance | X | ALLOWED |
 
 ## Fields
 
