@@ -2,5 +2,5 @@
 
 ## Demo List
 
-- [Demo1](./demo1/) — SAP 拡張：VOFM Routine / ABAP Class
-- [Demo2](./demo2/) — SAP 拡張：Database Table / Data Elements / Domains / CDS View
+- [Demo1](./demo1/) — 拡張：VOFM 示例
+- [Demo2](./demo2/) — 固定值定义表示例
