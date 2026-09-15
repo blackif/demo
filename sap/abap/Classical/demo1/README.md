@@ -1,62 +1,77 @@
 # Classical ABAP Demo1
 
-这是一个 **SAP Classical ABAP** 开发示例。
+这是一个 **SAP拡張** 的开发示例。
 
-本 Demo 主要用于说明基于 **VOFM Routine / ABAP Class** 的经典 ABAP 开发方式。
+本 Demo 主要用于说明基于 **VOFM Routine / ABAP Class** 的 SAP 拡張开发方式。
 
 ## 开发内容
 
-- Classical ABAP
+- SAP 拡張
 - VOFM Routine
 - Data Transfer Routine
-- `DATEN_KOPIEREN_901`
-- `DATEN_KOPIEREN_902`
 - ABAP Class
-- Billing Document Header (`VBRK`)
-- Delivery Header (`LIKP`)
+- set Billing Document Header (`VBRK`)
 
 ## 示例概要
 
-本 Demo 以销售与分销（SD）开票相关的 VOFM Routine 为例，将 VOFM Routine 的业务逻辑封装到 ABAP Class `YCLSD00XX_001_01` 中。
+本 Demo 以销售与分销（SD）开票相关的 VOFM Routine 为例，使用客户组2（KVGR2）控制发票是否需要分开。
 
 主要处理流程：
 
+### Case 1：出库标准 901
+
 ```text
-VOFM Routine
+VOFM Routine 901
         ↓
 YCLSD00XX_001_01
         ↓
-DATEN_KOPIEREN_901 / DATEN_KOPIEREN_902
+Customer Group 2 (KVGR2)
         ↓
-VBRK Billing Document Header
+set Billing Document Header (VBRK)
         ↓
-Combination Criteria / Billing Date
+Billing Split
+```
+
+### Case 2：收货标准 902
+
+```text
+VOFM Routine 902
+        ↓
+YCLSD00XX_001_01
+        ↓
+Customer Group 2 (KVGR2)
+        ↓
+set Billing Document Header (VBRK)
+        ↓
+Billing Split
 ```
 
 ## Classical ABAP Demo1 流程图
 
+### Case 1：出库标准 901
+
 ```mermaid
 flowchart TD
-    A[VOFM Routine] --> B[YCLSD00XX_001_01]
-    B --> C[DATEN_KOPIEREN_901]
-    B --> D[DATEN_KOPIEREN_902]
+    A1[VOFM Routine 901] --> B1[YCLSD00XX_001_01]
+    B1 --> C1[Customer Group 2 KVGR2]
+    C1 --> D1[set Billing Document Header VBRK]
+    D1 --> E1[Billing Split]
+```
 
-    C --> E[VBRK-ZUKRI]
-    D --> E
-    D --> F[LIKP-PODAT]
-    F --> G[VBRK-FKDAT]
+### Case 2：收货标准 902
 
-    E --> H[Billing Document Processing]
-    G --> H
+```mermaid
+flowchart TD
+    A2[VOFM Routine 902] --> B2[YCLSD00XX_001_01]
+    B2 --> C2[Customer Group 2 KVGR2]
+    C2 --> D2[set Billing Document Header VBRK]
+    D2 --> E2[Billing Split]
 ```
 
 ## 简要调用关系
 
-1. VOFM Routine 调用 ABAP Class `YCLSD00XX_001_01`。
-2. `DATEN_KOPIEREN_901` 根据 Customer Group 2 (`KVGR2`) 设置 Billing Document 的组合条件 `VBRK-ZUKRI`。
-3. `DATEN_KOPIEREN_902` 同样设置组合条件 `VBRK-ZUKRI`。
-4. `DATEN_KOPIEREN_902` 进一步检查 Delivery Header (`LIKP`) 的 POD Date (`PODAT`)。
-5. 当 `LIKP-PODAT` 存在时，将其设置到 Billing Date `VBRK-FKDAT`。
+1. **Case 1：出库标准 901**：VOFM Routine 901 调用 ABAP Class `YCLSD00XX_001_01`，根据客户组2（`KVGR2`）设置 Billing Document Header (`VBRK`) 的组合条件，从而控制发票是否需要分开。
+2. **Case 2：收货标准 902**：VOFM Routine 902 调用 ABAP Class `YCLSD00XX_001_01`，同样根据客户组2（`KVGR2`）设置 Billing Document Header (`VBRK`) 的组合条件，从而控制发票是否需要分开。
 
 ## 目录结构
 
