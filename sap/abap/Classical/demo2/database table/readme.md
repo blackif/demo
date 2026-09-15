@@ -28,11 +28,11 @@
 
 ## 自定义 Domains
 
-| Domains | Data Type | Length | Decimal | Output Length | Conversion Routine | Case sensitive | Sign |
-|---|---|---:|---:|---:|---|---|---|
-| ZDVARI_NAME | CHAR | 30 | 0 | 30 |  |  |  |
-| ZDSEL_TYPE | CHAR | 1 | 0 | 1 |  |  |  |
-| ZDSEL_NUMB | NUMC | 3 | 0 | 3 |  |  |  |
-| ZDDDSIGN | CHAR | 1 | 0 | 1 |  |  |  |
-| ZDDDOPTION | CHAR | 2 | 0 | 2 |  |  |  |
-| ZDVARI_VAL_255 | CHAR | 255 | 0 | 255 |  |  |  |
+| Domains | Data Type | Length | Decimal | Output Length | Conversion Routine | Case sensitive | Sign | 内容说明 |
+|---|---|---:|---:|---:|---|---|---|---|
+| ZDVARI_NAME | CHAR | 30 | 0 | 30 |  |  |  | バリアント変数名 |
+| ZDSEL_TYPE | CHAR | 1 | 0 | 1 |  |  |  | 選択タイプ |
+| ZDSEL_NUMB | NUMC | 3 | 0 | 3 |  |  |  | 現在の選択番号 |
+| ZDDDSIGN | CHAR | 1 | 0 | 1 |  |  |  | 範囲データ型の行データ型: タイプ SIGN のコンポーネント |
+| ZDDDOPTION | CHAR | 2 | 0 | 2 |  |  |  | 範囲データ型の行データ型のタイプ OPTION のコンポーネント |
+| ZDVARI_VAL_255 | CHAR | 255 | 0 | 255 |  |  |  | 選択バリアント: 項目内容(LOW/HIGH) |
