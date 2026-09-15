@@ -11,12 +11,8 @@
       "Sign": "",
       "Case_sensitive": "",
       "Value_Range": {
-        "Single": [
-          {"Fixed": "", "description": ""}
-        ],
-        "Intervals": [
-          {"Lower_limit": "", "Uppr_limit": "", "description": ""}
-        ],
+        "Single": [{"Fixed": "", "description": ""}],
+        "Intervals": [{"Lower_limit": "", "Uppr_limit": "", "description": ""}],
         "Value_table": ""
       },
       "description": "バリアント変数名"
@@ -29,14 +25,13 @@
       "output_length": 1,
       "Routine": "",
       "Sign": "",
-      "Case_sensitive": "",
+      "Case_sensitive": "X",
       "Value_Range": {
         "Single": [
-          {"Fixed": "", "description": ""}
+          {"Fixed": "0", "description": "P，Parameter"},
+          {"Fixed": "1", "description": "S，Select option"}
         ],
-        "Intervals": [
-          {"Lower_limit": "", "Uppr_limit": "", "description": ""}
-        ],
+        "Intervals": [{"Lower_limit": "", "Uppr_limit": "", "description": ""}],
         "Value_table": ""
       },
       "description": "選択タイプ"
@@ -51,12 +46,8 @@
       "Sign": "",
       "Case_sensitive": "",
       "Value_Range": {
-        "Single": [
-          {"Fixed": "", "description": ""}
-        ],
-        "Intervals": [
-          {"Lower_limit": "", "Uppr_limit": "", "description": ""}
-        ],
+        "Single": [{"Fixed": "", "description": ""}],
+        "Intervals": [{"Lower_limit": "", "Uppr_limit": "", "description": ""}],
         "Value_table": ""
       },
       "description": "現在の選択番号"
@@ -72,11 +63,10 @@
       "Case_sensitive": "",
       "Value_Range": {
         "Single": [
-          {"Fixed": "", "description": ""}
+          {"Fixed": "0", "description": "I，Range limit included"},
+          {"Fixed": "1", "description": "E，Range limit excluded"}
         ],
-        "Intervals": [
-          {"Lower_limit": "", "Uppr_limit": "", "description": ""}
-        ],
+        "Intervals": [{"Lower_limit": "", "Uppr_limit": "", "description": ""}],
         "Value_table": ""
       },
       "description": "範囲データ型の行データ型: タイプ SIGN のコンポーネント"
@@ -92,11 +82,18 @@
       "Case_sensitive": "",
       "Value_Range": {
         "Single": [
-          {"Fixed": "", "description": ""}
+          {"Fixed": "0", "description": "EQ，Equals"},
+          {"Fixed": "1", "description": "BT，Between ... and ..."},
+          {"Fixed": "2", "description": "CP，Contains the template"},
+          {"Fixed": "3", "description": "LE，Less than or equal to"},
+          {"Fixed": "4", "description": "GE，Greater than or equal to"},
+          {"Fixed": "5", "description": "NE，Not equal to"},
+          {"Fixed": "6", "description": "NB，Not between ... and ..."},
+          {"Fixed": "7", "description": "NP，Does not contain the template"},
+          {"Fixed": "8", "description": "GT，Greater than"},
+          {"Fixed": "9", "description": "LT，Less than"}
         ],
-        "Intervals": [
-          {"Lower_limit": "", "Uppr_limit": "", "description": ""}
-        ],
+        "Intervals": [{"Lower_limit": "", "Uppr_limit": "", "description": ""}],
         "Value_table": ""
       },
       "description": "範囲データ型の行データ型のタイプ OPTION のコンポーネント"
@@ -111,12 +108,8 @@
       "Sign": "",
       "Case_sensitive": "",
       "Value_Range": {
-        "Single": [
-          {"Fixed": "", "description": ""}
-        ],
-        "Intervals": [
-          {"Lower_limit": "", "Uppr_limit": "", "description": ""}
-        ],
+        "Single": [{"Fixed": "", "description": ""}],
+        "Intervals": [{"Lower_limit": "", "Uppr_limit": "", "description": ""}],
         "Value_table": ""
       },
       "description": "選択バリアント: 項目内容(LOW/HIGH)"
