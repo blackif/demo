@@ -1,0 +1,21 @@
+@AbapCatalog.viewEnhancementCategory: [ #NONE ]
+
+@AccessControl.authorizationCheck: #NOT_REQUIRED
+
+@EndUserText.label: 'Custom TVARVC Table View'
+
+@Metadata.ignorePropagatedAnnotations: true
+
+define view entity YC_XA_TVARVC
+  as select from yxacmn0001_001
+
+{
+  key name as Name,
+  key type as Type,
+  key numb as Numb,
+
+      sign as Sign,
+      opti as Opti,
+      low  as Low,
+      high as High
+}
