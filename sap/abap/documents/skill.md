@@ -36,7 +36,7 @@ If the required template file does not exist, **stop the remaining steps** and i
 
 #### List README Rules
 
-The first line must be the current folder/file name followed by `List Preview`.
+The first line must be the current folder name followed by `List Preview`.
 
 Example:
 
@@ -46,54 +46,53 @@ ABAP List Preview
 
 Then leave exactly one blank line. Starting from the third line, list the child folder links and their descriptions.
 
-Example:
+Each list item must follow this format:
 
 ```text
-- [Demo1](./demo1/) — Manufacturing Order Header OData V4 Web API
-- [Demo2](./demo2/) — Manufacturing Order Component OData V4 Web API
+- [Folder Name](./folder/) — Description
 ```
 
 There must be no additional blank lines between list items.
 
 #### Demo README Rules
 
-The first line must be the current folder name followed by the current folder name in the form `[Type] [FolderName]`.
+The title and section structure must follow `sap/abap/documents/template/demo.md` exactly.
 
-Example:
+The current template uses the first line format:
 
 ```text
-RAP Demo1
+# [Previous folder name] [Current Folder Name]
 ```
 
-Then leave exactly one blank line and use the following fixed section order:
+Then the following headings and subheadings must exist and remain in the same order:
 
-1. `処理概要`
-   - Starting from the next line, describe the processing contained in the entire Demo folder.
-   - Use numbered items `1.`, `2.`, `3.` etc.
-   - Keep the descriptions as concise as possible.
-2. `前提/制約条件`
-3. `前提条件：`
-   - List prerequisites with Markdown list items.
-   - If none exist, write `None`.
-4. `制約条件：`
-   - List constraints with Markdown list items.
-   - If none exist, write `None`.
-5. `処理概要図`
-   - Add the processing overview diagram/content here.
-6. `依存関係`
-7. `使用公開API`
-   - Record the CDS Views, Views, Database Tables, and other publicly available SAP objects or APIs actually used by the Demo.
-   - If none exist, write `None`.
-   - Otherwise use a table with exactly these columns: `API名`, `種類`, `用途`.
-8. `詳細設計`
-   - Describe the Demo's detailed processing as text based on the actual implementation and code.
-9. `補足情報`
-   - This section records message information only.
-   - If the Demo has no messages, write `None`.
-   - If messages exist, use the fixed heading `消息内容`, followed by a table with exactly these columns: `No`, `消息类`, `消息内容`, `参数`.
-10. The final line must be `EOF`.
+```text
+## 処理概要
+## 前提/制約条件
+### 前提条件：
+### 制約条件：
+## 処理概要図
+## 依存関係
+### 使用公開API
+## 詳細設計
+## 補足情報
+### 消息内容
+EOF
+```
 
-Do not add, remove, reorder, or rename the fixed sections unless the template itself is changed.
+Rules for the sections:
+
+- `処理概要`: describe the processing contained in the entire Demo folder using concise numbered items.
+- `前提条件：`: list prerequisites. If none exist, use `None`.
+- `制約条件：`: list constraints. If none exist, use `None`.
+- `処理概要図`: record the processing overview diagram/content.
+- `使用公開API`: record the CDS Views, Views, Database Tables, and other relevant publicly available SAP objects or APIs actually used by the Demo. If none exist, use `None`. Use the template table columns `API名`, `種類`, `用途`.
+- `詳細設計`: describe the Demo's detailed implementation and processing based on the actual code. There is no requirement to use Chinese.
+- `補足情報`: record message information only. If the Demo has no messages, use `None`.
+- `消息内容`: when messages exist, use the message table defined by the template.
+- The final line must be `EOF`.
+
+Do not add, remove, reorder, or rename template-required headings unless the template itself is changed.
 
 ### 3. Self-Check
 
@@ -105,11 +104,11 @@ The self-check must confirm at minimum:
 - The correct template was used.
 - The first line follows the template rule.
 - Required blank-line placement is correct.
-- Required headings are present.
+- Required headings and subheadings are present.
 - Heading order follows the template.
 - The content is placed in the correct sections.
 - List items and tables follow the required format.
-- `使用公開API` contains the CDS Views, Views, Database Tables, and other relevant objects actually used by the Demo, or `None` when there are none.
+- `使用公開API` records the CDS Views, Views, Database Tables, and other relevant objects actually used by the Demo, or `None` when there are none.
 - `補足情報` contains only message information, or `None` when there are no messages.
 - The final line is `EOF` for Demo README files.
 - No template-required section was accidentally removed.
@@ -118,21 +117,41 @@ The self-check must confirm at minimum:
 
 ### 4. Automated Check
 
-After the self-check, the README must be submitted to the repository's automated README validation process.
+When a repository change includes a `README.md` file, GitHub Actions must execute the README validation process.
 
-The planned validation mechanism is:
+The validation script is:
 
-- Python script: `sap/abap/documents/script/check_readme.py`
-- GitHub Actions: execute the Python validation against the relevant README files.
+`sap/abap/documents/script/check_readme.py`
 
-The Python validation will check the specified headings, structure, and content requirements. The automated check does not replace the AI self-check; both are required.
+The script behavior is:
+
+1. Check whether the changed file is `README.md`. If not, stop processing that file successfully.
+2. Determine the README type from the repository-relative path depth:
+   - Third or fourth level → List README.
+   - Fifth level → Demo README.
+   - Other depths → validation failure.
+3. For a List README, validate against `sap/abap/documents/template/list.md`:
+   - Validate the title format `[Current Folder Name] List Preview`.
+   - Validate every content line against `- [Folder Name](./folder/) — Description`.
+   - Do not allow unexpected blank lines in the list content.
+4. For a Demo README, validate against `sap/abap/documents/template/demo.md`:
+   - Validate the title format defined by the template.
+   - Validate that all required headings and subheadings exist.
+   - Validate that the headings and subheadings appear in the template order.
+   - Validate that the README ends with `EOF`.
+
+The automated check does not replace the AI self-check; both are required.
 
 If the automated check fails, AI must inspect the failure, correct the README, perform the self-check again, and submit it for validation again.
 
 ## Standard Workflow
 
 ```text
-Determine README type
+README changed?
+   ├─ No → Stop
+   └─ Yes
+        ↓
+Check README type
         ↓
 Check corresponding template
         ↓
@@ -144,7 +163,9 @@ Create / update README
         ↓
 AI self-check
         ↓
-Python + GitHub Actions validation
+Python check_readme.py
+        ↓
+GitHub Actions validation
         ↓
 Validation passed?
    ├─ No → Correct → Self-check → Validate again
@@ -159,6 +180,7 @@ Validation passed?
 4. Do not consider the README complete until the automated validation has passed.
 5. When updating an existing README, apply the same procedure as when creating a new README.
 6. README content must describe the actual repository files and processing; do not add unsupported implementation details.
-7. `詳細設計` does not require Chinese; document the implementation clearly using the appropriate language.
-8. `補足情報` is limited to message information. If there are no messages, use `None`.
+7. `詳細設計` has no Chinese-language requirement.
+8. `補足情報` is limited to message information; if there are no messages, use `None`.
 9. `使用公開API` must include the CDS Views, Views, Database Tables, and other relevant public objects or APIs actually used by the Demo.
+10. GitHub Actions should run the README checker only when a changed file is `README.md`.
