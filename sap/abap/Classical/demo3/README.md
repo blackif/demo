@@ -40,54 +40,17 @@ demo3/
 
 ## 4. Processing Flow
 
-```text
-┌──────────────────────────────┐
-│ Exit Extension               │
-│ zxf01u01                     │
-└──────────────┬───────────────┘
-               │ INCLUDE
-               ▼
-┌──────────────────────────────┐
-│ zfi00XX_001_01               │
-│ Payment Clearing Enhancement │
-└──────────────┬───────────────┘
-               │ CALL
-               ▼
-┌──────────────────────────────┐
-│ ZCLFI00XX_001_01             │
-│ EXIT_RFEBBU10_001            │
-└──────────────┬───────────────┘
-               │
-       ┌───────┴────────┐
-       ▼                ▼
-┌──────────────┐  ┌────────────────────┐
-│Parameter Check│  │Get Data             │
-│Company Code   │  │Customer             │
-└──────────────┘  │Accounting Items     │
-                  │Bank Charge Settings │
-                  └─────────┬──────────┘
-                            │
-                            ▼
-                  ┌────────────────────┐
-                  │Get Matched Item    │
-                  │Payment Amount      │
-                  │+ Bank Charge       │
-                  └─────────┬──────────┘
-                            │
-                            ▼
-                  ┌────────────────────┐
-                  │Set Data            │
-                  │FEBCL               │
-                  └────────────────────┘
-
-Bank Charge Data
-      │
-      ▼
-┌──────────────────────────────┐
-│ ZC_FI_IsjpbkCharge           │
-│                              │
-│ ISJPBKCHARGE + I_CompanyCode │
-└──────────────────────────────┘
+```mermaid
+flowchart LR
+    A[Exit Extension<br/>zxf01u01] -->|INCLUDE| B[Include<br/>zfi00XX_001_01]
+    B -->|CALL| C[ABAP Class<br/>ZCLFI00XX_001_01]
+    C --> D[Parameter Check<br/>Company Code]
+    C --> E[Get Data<br/>Customer / Accounting Items / Bank Charge]
+    D --> F[Get Matched Item]
+    E --> F
+    F --> G[Set Data<br/>FEBCL]
+    E --> H[CDS View<br/>ZC_FI_IsjpbkCharge]
+    H --> I[ISJPBKCHARGE<br/>+ I_CompanyCode]
 ```
 
 ## 5. CDS View
@@ -134,46 +97,15 @@ set_data
 
 ### 6.2 `PARAMETER_CHECK`
 
-根据传入的 Company Code 查询 `I_AddlCompanyCodeInformation`。
-
-判断 Company Code 是否存在指定的参数：
-
-```text
-CompanyCodeParameterType  = ZFI001
-CompanyCodeParameterValue = true
-```
-
-如果检查失败，则调用 `CREATE_APP_LOG` 写入 Application Log。
+根据传入的 Company Code 查询 `I_AddlCompanyCodeInformation`，判断 Company Code 是否存在参数 `ZFI001` 且参数值为 `true`。检查失败时调用 `CREATE_APP_LOG`。
 
 ### 6.3 `GET_DATA`
 
-取得后续匹配所需要的数据。
+取得后续匹配所需要的数据：
 
-#### Customer
-
-通过 `I_CustomerCompany`，使用 `FEBEP-PARTN` 对应的 Accounting Clerk Phone Number 查找 Customer。
-
-#### Accounting Document Items
-
-通过 `I_OperationalAcctgDocItem` 取得：
-
-- Accounting Document
-- Accounting Document Item
-- Amount in Transaction Currency
-- Due Calculation Base Date
-- Cash Discount 1 Days
-- Added Date
-
-只处理尚未被 Clearing Journal Entry 清账的项目，并按照 `AddedDate`、`AccountingDocument` 排序。
-
-#### Bank Charge
-
-通过 `ZC_FI_IsjpbkCharge` 根据：
-
-- Company Code
-- Bank Charge Pattern ID
-
-取得允许的 Bank Charge Amount。
+- 通过 `I_CustomerCompany`，使用 `FEBEP-PARTN` 对应的 Accounting Clerk Phone Number 查找 Customer。
+- 通过 `I_OperationalAcctgDocItem` 取得尚未清账的 Accounting Document Items，并计算 `AddedDate` 后排序。
+- 通过 `ZC_FI_IsjpbkCharge` 根据 Company Code 和 Bank Charge Pattern ID 取得 Bank Charge Amount。
 
 ### 6.4 `GET_MATCHED_ITEM`
 
@@ -181,45 +113,31 @@ CompanyCodeParameterValue = true
 
 首先取得手续费配置中的最大手续费，然后进行两种匹配。
 
-#### Pattern 1：多个 Accounting Items 合计
+**多个 Accounting Items 合计：**
 
 ```text
-Accounting Item 1
-       +
-Accounting Item 2
-       +
-Accounting Item 3
-       ↓
-Total Amount
-       ↓
+Accounting Items Total
+        ↓
 Total Amount - Payment Amount
-       ↓
+        ↓
 Bank Charge Amount
 ```
 
-当差额等于配置中的 `BankChargeAmount` 时，认为找到了目标清账项目。
+当差额等于配置中的 `BankChargeAmount` 时，确定目标清账项目；同时要求差额不能超过最大手续费。
 
-同时要求差额不能超过配置的最大手续费。
-
-#### Pattern 2：单个 Accounting Item
-
-如果合计方式没有找到匹配结果，则逐个 Accounting Item 检查：
+**单个 Accounting Item：**
 
 ```text
 Accounting Item Amount - Payment Amount
                 ↓
-         Bank Charge Amount ?
+         Bank Charge Amount
 ```
 
-如果差额等于银行手续费配置，则确定为目标项目。
-
-如果最终没有找到目标，则通过 `CREATE_APP_LOG` 记录错误。
+如果差额等于银行手续费配置，则确定目标项目。
 
 ### 6.5 `SET_DATA`
 
 将匹配到的 Accounting Documents 转换为 `FEBCL` 数据。
-
-主要设置：
 
 | FEBCL Field | 来源/固定值 |
 |---|---|
@@ -232,48 +150,35 @@ Accounting Item Amount - Payment Amount
 | `SELVON` | Accounting Document |
 | `SELBIS` | 空值 |
 
-最终通过 `FEBCL` 返回需要执行 Clearing 的项目。
-
 ### 6.6 `CREATE_APP_LOG`
 
 使用 BAL API 创建 Application Log：
 
 - Object：`ZFI`
 - Subobject：`ZFI0009_001_01`
-
-主要使用：
-
 - `CL_BALI_LOG`
 - `CL_BALI_HEADER_SETTER`
 - `CL_BALI_MESSAGE_SETTER`
 - `CL_BALI_LOG_DB`
 
-用于记录参数检查、Customer、Accounting Item、Bank Charge 或 Matching 失败等异常情况。
-
 ## 7. Main Dependencies
 
-```text
-zxf01u01
-   │
-   └── INCLUDE zfi00XX_001_01
-              │
-              └── ZCLFI00XX_001_01=>EXIT_RFEBBU10_001
-                           │
-             ┌─────────────┼─────────────┐
-             ▼             ▼             ▼
-       I_CustomerCompany   I_OperationalAcctgDocItem   ZC_FI_IsjpbkCharge
-             │             │             │
-             │             │             └── ISJPBKCHARGE
-             │             │                 + I_CompanyCode
-             │             │
-             └─────────────┴───────────────┐
-                                           ▼
-                                      FEBCL output
+```mermaid
+flowchart LR
+    A[zxf01u01] -->|INCLUDE| B[zfi00XX_001_01]
+    B -->|CALL| C[ZCLFI00XX_001_01]
+    C --> D[I_AddlCompanyCodeInformation]
+    C --> E[I_CustomerCompany]
+    C --> F[I_OperationalAcctgDocItem]
+    C --> G[ZC_FI_IsjpbkCharge]
+    G --> H[ISJPBKCHARGE]
+    G --> I[I_CompanyCode]
+    C --> J[FEBCL]
 ```
 
 ## 8. Error Handling
 
-本 Demo 不通过异常直接终止整个 Exit，而是在关键数据取得失败或匹配失败时创建 Application Log。
+本 Demo 在 Company Code 参数检查、Customer、Accounting Item、Bank Charge 数据取得或最终匹配失败时，通过 Application Log 记录错误信息。
 
 主要 Message Number：
 
