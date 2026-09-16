@@ -87,7 +87,6 @@ Then leave exactly one blank line and use the following fixed section order:
    - Otherwise use a table with exactly these columns: `API名`, `種類`, `用途`.
 8. `詳細設計`
    - Describe the Demo's detailed processing as text based on the actual implementation and code.
-   - The language of this section is not restricted to Chinese; use the appropriate language for the documentation.
 9. `補足情報`
    - This section records message information only.
    - If the Demo has no messages, write `None`.
