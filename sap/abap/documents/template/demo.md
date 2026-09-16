@@ -1,6 +1,4 @@
-# Demo README Template
-
-[Current Folder Name] [Current Folder Name]
+# [Current Folder Name] [Current Folder Name]
 
 処理概要
 1. [処理内容]
