@@ -80,19 +80,21 @@ Then the following headings and subheadings must exist and remain in the same or
 EOF
 ```
 
+Language rule: unless otherwise noted below, all Demo README content must be written in Japanese. `詳細設計` is the only section exempt from this requirement and may be written in any language, including Chinese.
+
 Rules for the sections:
 
 - `処理概要`: describe the processing contained in the entire Demo folder using concise numbered items.
 - `前提条件：`: list prerequisites. If none exist, use `None`.
 - `制約条件：`: list constraints. If none exist, use `None`.
 - `処理概要図`: record the processing overview diagram/content.
-- `使用公開API`: record the CDS Views, Views, Database Tables, and other relevant publicly available SAP objects or APIs actually used by the Demo. If none exist, use `None`. Use the template table columns `API名`, `種類`, `用途`.
-- `詳細設計`: describe the Demo's detailed implementation and processing based on the actual code. There is no requirement to use Chinese.
+- `使用公開API`: record the CDS Views, Views, Database Tables, Enhancement Spots (BAdI, User-Exit, VOFM Routine, and Class methods used as extension points), and other relevant SAP objects or APIs actually used by the Demo. If none exist, use `None`. Use the template table columns `API名`, `種類`, `用途`.
+- `詳細設計`: describe the Demo's detailed implementation and processing based on the actual code. There is no requirement to use Chinese, or any other language, for this section.
 - `補足情報`: record message information only. If the Demo has no messages, use `None`.
 - `消息内容`: when messages exist, use the message table defined by the template.
 - The final line must be `EOF`.
 
-Do not add, remove, reorder, or rename template-required headings unless the template itself is changed.
+The set and order of `##`/`### ` headings must exactly match the template — no heading may be added, removed, reordered, or renamed unless the template itself is changed. Within the body of each section, content may be elaborated freely (additional paragraphs, sub-lists, tables, diagrams, etc.) as needed to accurately describe the Demo, as long as no new `##`/`### ` heading is introduced.
 
 ### 3. Self-Check
 
@@ -108,10 +110,11 @@ The self-check must confirm at minimum:
 - Heading order follows the template.
 - The content is placed in the correct sections.
 - List items and tables follow the required format.
-- `使用公開API` records the CDS Views, Views, Database Tables, and other relevant objects actually used by the Demo, or `None` when there are none.
+- `使用公開API` records the CDS Views, Views, Database Tables, Enhancement Spots (BAdI, User-Exit, VOFM Routine, extension-point Class methods), and other relevant objects actually used by the Demo, or `None` when there are none.
 - `補足情報` contains only message information, or `None` when there are no messages.
 - The final line is `EOF` for Demo README files.
-- No template-required section was accidentally removed.
+- No template-required heading was accidentally removed, and no extra `##`/`### ` heading beyond the template was added.
+- All content is written in Japanese, except `詳細設計`, which may be written in any language.
 - Markdown formatting follows the template.
 - Repository-specific content is accurate and consistent with the files represented by the README.
 
@@ -247,8 +250,9 @@ Validation passed?
 4. Do not consider the README complete until the automated validation has passed.
 5. When updating an existing README, apply the same procedure as when creating a new README.
 6. README content must describe the actual repository files and processing; do not add unsupported implementation details.
-7. `詳細設計` has no Chinese-language requirement.
+7. All Demo README content must be written in Japanese, except `詳細設計`, which has no language requirement and may be written in any language, including Chinese.
 8. `補足情報` is limited to message information; if there are no messages, use `None`.
-9. `使用公開API` must include the CDS Views, Views, Database Tables, and other relevant public objects or APIs actually used by the Demo.
+9. `使用公開API` must include the CDS Views, Views, Database Tables, Enhancement Spots (BAdI, User-Exit, VOFM Routine, extension-point Class methods), and other relevant public objects or APIs actually used by the Demo.
 10. GitHub Actions should run the README checker only when a changed file is `README.md`.
 11. Issue content must follow `sap/abap/documents/template/issue.md` and must not introduce unapproved sections or status fields.
+12. The set and order of `##`/`### ` headings in a Demo README must exactly match the template — no heading may be added or removed. Free elaboration of content within existing sections is allowed.
