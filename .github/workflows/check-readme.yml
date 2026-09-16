@@ -1,0 +1,54 @@
+name: Check README
+
+on:
+  push:
+    paths:
+      - '**/README.md'
+  pull_request:
+    paths:
+      - '**/README.md'
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check-readme:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.x'
+
+      - name: Find changed README files
+        id: changed-readmes
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            git fetch origin "${{ github.event.pull_request.base.ref }}" --depth=1
+            git diff --name-only "origin/${{ github.event.pull_request.base.ref }}...${{ github.sha }}" -- '**/README.md' > changed_readmes.txt
+          else
+            git diff --name-only "${{ github.event.before }}" "${{ github.sha }}" -- '**/README.md' > changed_readmes.txt
+          fi
+
+          echo "Changed README files:"
+          cat changed_readmes.txt || true
+
+      - name: Validate changed README files
+        shell: bash
+        run: |
+          if [ ! -s changed_readmes.txt ]; then
+            echo "No README.md files changed."
+            exit 0
+          fi
+
+          while IFS= read -r file; do
+            [ -z "$file" ] && continue
+            echo "Checking $file"
+            python sap/abap/documents/script/check_readme.py "$file"
+          done < changed_readmes.txt
