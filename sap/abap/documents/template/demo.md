@@ -1,4 +1,4 @@
-# [Current Folder Name] [Current Folder Name]
+# [Previous folder name] [Current Folder Name]
 
 ## 処理概要
 1. [処理内容]
