@@ -19,6 +19,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v6
@@ -26,12 +28,12 @@ jobs:
           python-version: '3.x'
 
       - name: Find changed README files
-        id: changed-readmes
         shell: bash
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then
-            git fetch origin "${{ github.event.pull_request.base.ref }}" --depth=1
-            git diff --name-only "origin/${{ github.event.pull_request.base.ref }}...${{ github.sha }}" -- '**/README.md' > changed_readmes.txt
+            git diff --name-only "${{ github.event.pull_request.base.sha }}" "${{ github.sha }}" -- '**/README.md' > changed_readmes.txt
+          elif [ "${{ github.event.before }}" = "0000000000000000000000000000000000000000" ]; then
+            git diff-tree --no-commit-id --name-only -r "${{ github.sha }}" -- '**/README.md' > changed_readmes.txt
           else
             git diff --name-only "${{ github.event.before }}" "${{ github.sha }}" -- '**/README.md' > changed_readmes.txt
           fi
