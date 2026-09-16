@@ -1,10 +1,10 @@
-# SAP ABAP README Creation Skill
+# SAP ABAP README and Issue Creation Skill
 
 ## Purpose
 
-This skill defines the standard procedure for creating or updating README files under `sap/abap/` so that documentation format remains consistent across the repository.
+This skill defines the standard procedure for creating or updating README files and GitHub Issues under `sap/abap/` so that documentation and user-confirmation tasks remain consistent across the repository.
 
-## Execution Rules
+## README Rules
 
 AI must execute the following steps in order whenever it creates or modifies a README file.
 
@@ -144,6 +144,73 @@ The automated check does not replace the AI self-check; both are required.
 
 If the automated check fails, AI must inspect the failure, correct the README, perform the self-check again, and submit it for validation again.
 
+## Issue Rules
+
+GitHub Issues are used to communicate AI-generated tasks, validation results, and user confirmation points. The Issue structure must follow the template:
+
+`sap/abap/documents/template/issue.md`
+
+The template structure is:
+
+```text
+## 任务
+{{Task}}
+
+## 要求
+- {{Requirement}}
+
+## 验收条件
+- [ ] {{Checklist item}}
+```
+
+Every Issue must contain exactly these three sections:
+
+- `任务`: one clear task statement.
+- `要求`: one or more conditions that define what the task must satisfy.
+- `验收条件`: one or more concrete checklist items used to verify that the task is complete.
+
+Rules for creating an Issue:
+
+1. One Issue must do exactly one thing. If the task can be split into two independently closable tasks, create separate Issues.
+2. `要求` must contain one or more concrete requirements.
+3. `验收条件` must contain one or more concrete verification items.
+4. If the task produces an output, represent that output as an `验收条件` item rather than adding a separate `Output` section.
+5. Do not add parent/child relationship fields or sections to the Issue content. Issue relationships are managed separately.
+6. Do not add custom status fields to the Issue content. GitHub Issue `open` / `closed` is the completion state.
+7. Father Issues and Child Issues use exactly the same Issue structure.
+8. The Issue body must follow `sap/abap/documents/template/issue.md`; do not invent additional sections unless the template itself is changed.
+
+### Issue Self-Check
+
+Before creating an Issue, AI must confirm:
+
+- The Issue describes exactly one task.
+- `任务` contains one clear task.
+- `要求` contains at least one concrete requirement.
+- `验收条件` contains at least one concrete checklist item.
+- Any expected output is represented in `验收条件`.
+- No custom status, Output, parent, or child fields were added.
+- The body follows the current Issue template exactly.
+
+### Issue Creation Flow
+
+When creating an Issue:
+
+1. Confirm the target repository before creating the Issue.
+2. Determine the single task the Issue needs to accomplish.
+3. Check the current `sap/abap/documents/template/issue.md`.
+4. Write the `任务` section.
+5. Add all required conditions to `要求`.
+6. Add concrete verification points to `验收条件`.
+7. Perform the Issue Self-Check.
+8. Create the GitHub Issue.
+
+### Issue Completion
+
+An Issue is complete when all `验收条件` have been satisfied and the Human closes the GitHub Issue.
+
+The AI must not create an additional status field to represent completion.
+
 ## Standard Workflow
 
 ```text
@@ -176,7 +243,7 @@ Validation passed?
 
 1. Do not invent a README structure when the required template is missing.
 2. Do not treat a list README and a demo README as interchangeable.
-3. Do not skip the self-check because automated validation exists.
+3. Do not skip the README self-check because automated validation exists.
 4. Do not consider the README complete until the automated validation has passed.
 5. When updating an existing README, apply the same procedure as when creating a new README.
 6. README content must describe the actual repository files and processing; do not add unsupported implementation details.
@@ -184,3 +251,4 @@ Validation passed?
 8. `補足情報` is limited to message information; if there are no messages, use `None`.
 9. `使用公開API` must include the CDS Views, Views, Database Tables, and other relevant public objects or APIs actually used by the Demo.
 10. GitHub Actions should run the README checker only when a changed file is `README.md`.
+11. Issue content must follow `sap/abap/documents/template/issue.md` and must not introduce unapproved sections or status fields.
