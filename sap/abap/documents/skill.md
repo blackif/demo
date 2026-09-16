@@ -82,15 +82,17 @@ Then leave exactly one blank line and use the following fixed section order:
    - Add the processing overview diagram/content here.
 6. `依存関係`
 7. `使用公開API`
-   - If no public API exists, write `None`.
+   - Record the CDS Views, Views, Database Tables, and other publicly available SAP objects or APIs actually used by the Demo.
+   - If none exist, write `None`.
    - Otherwise use a table with exactly these columns: `API名`, `種類`, `用途`.
 8. `詳細設計`
-   - Describe the Demo in Chinese as a textual representation of the code and its detailed processing.
+   - Describe the Demo's detailed processing as text based on the actual implementation and code.
+   - The language of this section is not restricted to Chinese; use the appropriate language for the documentation.
 9. `補足情報`
-10. Message / CDS information
-   - For a program that outputs messages, use the fixed heading `消息内容`, followed by a table with exactly these columns: `No`, `消息类`, `消息内容`, `参数`.
-   - If the program has no messages, for example a CDS Demo, replace `消息内容` with the appropriate fixed information heading such as `CDS XXX 情報`, and use a table with exactly these columns: `fields`, `key`, `Annotations`, `Description`.
-11. The final line must be `EOF`.
+   - This section records message information only.
+   - If the Demo has no messages, write `None`.
+   - If messages exist, use the fixed heading `消息内容`, followed by a table with exactly these columns: `No`, `消息类`, `消息内容`, `参数`.
+10. The final line must be `EOF`.
 
 Do not add, remove, reorder, or rename the fixed sections unless the template itself is changed.
 
@@ -108,6 +110,8 @@ The self-check must confirm at minimum:
 - Heading order follows the template.
 - The content is placed in the correct sections.
 - List items and tables follow the required format.
+- `使用公開API` contains the CDS Views, Views, Database Tables, and other relevant objects actually used by the Demo, or `None` when there are none.
+- `補足情報` contains only message information, or `None` when there are no messages.
 - The final line is `EOF` for Demo README files.
 - No template-required section was accidentally removed.
 - Markdown formatting follows the template.
@@ -156,3 +160,6 @@ Validation passed?
 4. Do not consider the README complete until the automated validation has passed.
 5. When updating an existing README, apply the same procedure as when creating a new README.
 6. README content must describe the actual repository files and processing; do not add unsupported implementation details.
+7. `詳細設計` does not require Chinese; document the implementation clearly using the appropriate language.
+8. `補足情報` is limited to message information. If there are no messages, use `None`.
+9. `使用公開API` must include the CDS Views, Views, Database Tables, and other relevant public objects or APIs actually used by the Demo.
