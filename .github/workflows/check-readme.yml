@@ -15,6 +15,9 @@ permissions:
 jobs:
   check-readme:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
 
     steps:
       - name: Checkout repository
@@ -43,6 +46,9 @@ jobs:
 
       - name: Validate README files and create issues on failure
         shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
         run: |
           if [ ! -s changed_readmes.txt ]; then
             echo "No README.md files changed."
@@ -81,17 +87,17 @@ $output
 - [ ] \`$file\` 通过 \`sap/abap/documents/script/check_readme.py\` 检查。"
 
             existing_issue=$(gh issue list \
+              --repo "$GH_REPO" \
               --state open \
-              --search "$issue_title in:title" \
-              --json number \
-              --jq '.[0].number')
+              --json number,title \
+              --jq ".[] | select(.title == \"$issue_title\") | .number" | head -n 1)
 
             if [ -n "$existing_issue" ]; then
               echo "Updating existing Issue #$existing_issue"
-              gh issue edit "$existing_issue" --body "$issue_body"
+              gh issue edit "$existing_issue" --repo "$GH_REPO" --body "$issue_body"
             else
               echo "Creating Issue: $issue_title"
-              gh issue create --title "$issue_title" --body "$issue_body"
+              gh issue create --repo "$GH_REPO" --title "$issue_title" --body "$issue_body"
             fi
           done < changed_readmes.txt
 
