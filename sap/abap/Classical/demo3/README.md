@@ -41,16 +41,16 @@ demo3/
 ## 4. Processing Flow
 
 ```mermaid
-flowchart LR
-    A[Exit Extension<br/>zxf01u01] -->|INCLUDE| B[Include<br/>zfi00XX_001_01]
-    B -->|CALL| C[ABAP Class<br/>ZCLFI00XX_001_01]
-    C --> D[Parameter Check<br/>Company Code]
-    C --> E[Get Data<br/>Customer / Accounting Items / Bank Charge]
-    D --> F[Get Matched Item]
+flowchart TD
+    A["Exit Extension<br/>zxf01u01"] -->|INCLUDE| B["Include<br/>zfi00XX_001_01"]
+    B -->|CALL| C["ABAP Class<br/>ZCLFI00XX_001_01"]
+    C --> D["Parameter Check<br/>Company Code"]
+    C --> E["Get Data<br/>Customer / Accounting Items / Bank Charge"]
+    D --> F["Get Matched Item"]
     E --> F
-    F --> G[Set Data<br/>FEBCL]
-    E --> H[CDS View<br/>ZC_FI_IsjpbkCharge]
-    H --> I[ISJPBKCHARGE<br/>+ I_CompanyCode]
+    F --> G["Set Data<br/>FEBCL"]
+    E --> H["CDS View<br/>ZC_FI_IsjpbkCharge"]
+    H --> I["ISJPBKCHARGE<br/>+ I_CompanyCode"]
 ```
 
 ## 5. CDS View
@@ -164,16 +164,16 @@ Accounting Item Amount - Payment Amount
 ## 7. Main Dependencies
 
 ```mermaid
-flowchart LR
-    A[zxf01u01] -->|INCLUDE| B[zfi00XX_001_01]
-    B -->|CALL| C[ZCLFI00XX_001_01]
-    C --> D[I_AddlCompanyCodeInformation]
-    C --> E[I_CustomerCompany]
-    C --> F[I_OperationalAcctgDocItem]
-    C --> G[ZC_FI_IsjpbkCharge]
-    G --> H[ISJPBKCHARGE]
-    G --> I[I_CompanyCode]
-    C --> J[FEBCL]
+flowchart TD
+    A["zxf01u01"] -->|INCLUDE| B["zfi00XX_001_01"]
+    B -->|CALL| C["ZCLFI00XX_001_01"]
+    C --> D["I_AddlCompanyCodeInformation"]
+    C --> E["I_CustomerCompany"]
+    C --> F["I_OperationalAcctgDocItem"]
+    C --> G["ZC_FI_IsjpbkCharge"]
+    G --> H["ISJPBKCHARGE"]
+    G --> I["I_CompanyCode"]
+    C --> J["FEBCL"]
 ```
 
 ## 8. Error Handling
