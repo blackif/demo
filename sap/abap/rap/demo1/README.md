@@ -85,11 +85,17 @@ LongText
 
 ## 補足情報
 
-### 消息内容
-
-| メッセージ内容 | 設定内容 |
-|---|---|
-| Long Text Calculation | `Z_PP_LONGTEXT_GET` による Runtime Calculation |
-| OData V4 Response | 計算済み `LongText` を含む結果を返却 |
+### 目录構造
+```text
+demo1/
+├── README.md
+├── cds/
+│   ├── ZC_PP_ManufacturingOrder
+│   ├── ZI_PP_ACMSystemStatus
+│   ├── ZI_PP_LongTextMapping
+│   └── ZI_PP_ManufacturingOrder
+└── class/
+    └── z_pp_longtext_get.abap
+```
 
 EOF
