@@ -42,22 +42,16 @@ jobs:
           while IFS=$'\t' read -r status file; do
             [ -z "$file" ] && continue
 
-            # A Demo is the fourth repository path level:
-            # sap/abap/<list>/<demo>/...
             if [[ "$file" =~ ^sap/abap/[^/]+/[^/]+/ ]]; then
               demo_dir="${BASH_REMATCH[0]%/}"
             else
               continue
             fi
 
-            # Only react when the Demo directory itself did not exist in the
-            # previous commit. Git tracks files, so a new directory is detected
-            # by the first files added below that directory.
             if git cat-file -e "$BEFORE_SHA:$demo_dir" 2>/dev/null; then
               continue
             fi
 
-            # Only added files can establish a newly created Demo directory.
             if [[ "$status" != A* ]]; then
               continue
             fi
@@ -69,8 +63,6 @@ jobs:
             echo "No newly created Demo folders detected."
             exit 0
           fi
-
-          gh label create review --repo "$GH_REPO" --force --color 0366d6 --description "README review required"
 
           for demo_dir in "${!demo_dirs[@]}"; do
             issue_title="创建 README：$demo_dir"
@@ -94,10 +86,9 @@ jobs:
 
             issue_body=$(printf '## 任务\n为 [%s](%s) 创建 README 文件。\n\n## 要求\n- 分析并理解该 Demo 的全部实际内容。\n- 阅读并理解 [sap/abap/documents/skill.md](%s) 中与 Demo README 创建相关的规则。\n- 使用 [sap/abap/documents/template/demo.md](%s) 规定的结构和格式创建 README。\n- README 内容必须基于该 Demo 文件夹中的实际文件和处理内容，不得凭空补充实现内容。\n- 完成后执行 README 自检，并通过 sap/abap/documents/script/check_readme.py 的自动检查。\n- README 创建完成后，本 Issue 的验收条件复选框应标记为完成，并按 Skill 规则处理 Issue 标签。\n\n## 验收条件\n- [ ] 成功创建 [%s/README.md](%s)。\n' "$demo_dir" "$file_link" "$skill_link" "$template_link" "$demo_dir" "$readme_link")
 
-            echo "Creating Issue for $demo_dir"
+            echo "Creating Issue for $demo_dir without review label"
             gh issue create \
               --repo "$GH_REPO" \
               --title "$issue_title" \
-              --body "$issue_body" \
-              --label review
+              --body "$issue_body"
           done
