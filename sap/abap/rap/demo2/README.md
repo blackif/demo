@@ -1,26 +1,62 @@
-# RAP Demo2
+# rap demo2
 
-这是一个 **SAP RAP（RESTful ABAP Programming Model）** 开发示例。
- 
-本 Demo 主要用于说明基于 **Manufacturing Order Component（生产订单组件）** 的 RAP / OData V4 开发方式。
+## 処理概要
+本 Demo は Manufacturing Order Component を対象とした RAP / OData V4 Data Model の例です。
 
-## 开发内容
+1. Consumption View `ZC_PP_MOrderComponent` 作为对外数据模型。
+2. `ZC_PP_MOrderComponent` 基于 `ZI_PP_MOrderComponent`。
+3. `ZI_PP_MOrderComponent` 从 `I_ManufacturingOrder` 获取生产订单数据。
+4. Inner Join `I_ProductionOrderComponent` 获取生产订单组件。
+5. `I_ProductText` 提供 Product Name，`I_Batch` 提供 Supplier Batch。
+6. 最终返回生产订单、Material、Batch、数量、生产工序、库存地点和 Supplier Batch 等数据。
 
-- RAP（RESTful ABAP Programming Model）
-- OData V4
-- CDS View Entity
-- Consumption View
-- Composite View
-- CDS Association
-- Manufacturing Order Component
-- Batch / Supplier Batch
+## 前提/制約条件
 
-## 示例概要
+### 前提条件：
+- 使用 OData V4 / RAP Service 对外提供数据。
+- `ZC_PP_MOrderComponent` 作为 Consumption View。
+- Manufacturing Order Component Data 由相关 CDS View 获取。
 
-本 Demo 以生产订单组件（Manufacturing Order Component）为例，通过 CDS View Entity 构建数据模型。
+### 制約条件：
+- Product Name 依赖 `I_ProductText`。
+- Supplier Batch 依赖 `I_Batch` 以及 Plant / Batch 条件。
+  
+## 処理概要図
+```mermaid
+flowchart TD
+    A[OData V4] --> B[ZC_PP_MOrderComponent]
+    B --> C[ZI_PP_MOrderComponent]
+    C --> D[I_ManufacturingOrder]
+    C --> E[I_ProductionOrderComponent]
+    C --> F[I_ProductText]
+    C --> G[I_Batch]
+    E --> H[Material / Batch / Quantity / Operation]
+    F --> I[Product Name]
+    G --> J[Supplier Batch]
+    D --> K[Manufacturing Order Data]
+    H --> L[Final Result]
+    I --> L
+    J --> L
+    K --> L
+    L --> M[OData V4 Response]
+```
 
-主要处理流程：
+## 依存関係
 
+### 使用公開API
+
+| API名 | 種類 | 用途 |
+|---|---|---|
+| `I_ManufacturingOrder` | CDS View | Manufacturing Order Data |
+| `I_ProductionOrderComponent` | CDS View | Production Order Component Data |
+| `I_ProductText` | CDS View | Product Name |
+| `I_Batch` | CDS View | Batch / Supplier Batch |
+| `ZI_PP_MOrderComponent` | CDS View Entity | Composite Data Model |
+| `ZC_PP_MOrderComponent` | CDS Consumption View | OData V4 Response |
+
+## 詳細設計
+
+### CDS View Structure
 ```text
 OData V4
         ↓
@@ -39,57 +75,31 @@ Product / Batch Information
 OData V4 Response
 ```
 
-## RAP Demo2 流程图
+### Data Processing
+- `I_ProductionOrderComponent` 提供 Material、Batch、Required Quantity、Production Order Operation 等数据。
+- `I_ProductText` 根据 Material 获取 Product Name。
+- `I_Batch` 获取 Supplier Batch，并根据 Plant 判断使用 Plant Batch 或通用 Batch 数据。
+- Consumption View 返回生产订单、Material、Batch、数量、生产工序、库存地点和 Supplier Batch。
 
-```mermaid
-flowchart TD
-    A[OData V4] --> B[ZC_PP_MOrderComponent]
-    B --> C[ZI_PP_MOrderComponent]
-
-    C --> D[I_ManufacturingOrder]
-    C --> E[I_ProductionOrderComponent]
-    C --> F[I_ProductText]
-    C --> G[I_Batch]
-
-    E --> H[Material]
-    E --> I[Batch]
-    E --> J[Required Quantity]
-    E --> K[Production Order Operation]
-
-    F --> L[Product Name]
-    G --> M[Supplier Batch]
-
-    D --> N[Manufacturing Order Data]
-    H --> O[Final Result]
-    I --> O
-    J --> O
-    K --> O
-    L --> O
-    M --> O
-    N --> O
-
-    O --> P[OData V4 Response]
-```
-
-## 简要调用关系
-
-1. OData V4 Service 对外提供 RAP Service。
-2. Consumption View `ZC_PP_MOrderComponent` 作为对外数据模型。
-3. `ZC_PP_MOrderComponent` 基于 `ZI_PP_MOrderComponent`。
-4. `ZI_PP_MOrderComponent` 从 `I_ManufacturingOrder` 获取生产订单数据。
-5. `ZI_PP_MOrderComponent` Inner Join `I_ProductionOrderComponent`，获取生产订单组件数据。
-6. 通过 `I_ProductText` 获取 Material 对应的 Product Name。
-7. 通过 `I_Batch` 获取 Batch 对应的 Supplier Batch，并根据 Plant 判断使用 Plant Batch 或通用 Batch 数据。
-8. `ZC_PP_MOrderComponent` 将生产订单、Material、Batch、数量、生产工序、库存地点、Supplier Batch 等数据作为最终结果返回。
-
-## 目录结构
-
+### 目录结构
 ```text
 demo2/
-├── Service Bindings       <-dummy
-├── Service Definitions    <-dummy
+├── Service Bindings
+├── Service Definitions
 ├── cds/
 │   ├── ZC_PP_MOrderComponent.cds
 │   └── ZI_PP_MOrderComponent.cds
 └── README.md
 ```
+
+## 補足情報
+
+### 消息内容
+
+| メッセージ内容 | 設定内容 |
+|---|---|
+| Product Name | `I_ProductText` から取得 |
+| Supplier Batch | `I_Batch` から取得 |
+| OData V4 Response | Consumption View の最終結果を返却 |
+
+EOF
