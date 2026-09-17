@@ -10,63 +10,38 @@ AI must execute the following steps in order whenever it creates or modifies a R
 
 ### 1. Determine README Type
 
-First determine whether the target README is a **list README** or a **demo README** from its repository-relative path depth.
+Determine whether the target README is a **List README** or a **Demo README** from its repository-relative path depth.
 
-- **List README**: the README is located at the third or fourth path level.
-  - Example: `sap/abap/README.md`
-  - Example: `sap/abap/rap/README.md`
-  - Example: `sap/abap/Classical/README.md`
-- **Demo README**: the README is located at the fifth path level.
-  - Example: `sap/abap/Classical/demo1/README.md`
+- **List README**: third or fourth path level, e.g. `sap/abap/README.md`, `sap/abap/rap/README.md`, `sap/abap/Classical/README.md`.
+- **Demo README**: fifth path level, e.g. `sap/abap/Classical/demo1/README.md`.
 
-The path level must be determined from the repository-relative path, not from the local filesystem path.
+The path level must be determined from the repository-relative path, not the local filesystem path.
 
 ### 2. Check and Apply the Correct Template
 
-Before editing the README, AI must check the corresponding template under:
-
-`sap/abap/documents/template/`
+Before editing, check the corresponding template under `sap/abap/documents/template/`:
 
 - List README → `sap/abap/documents/template/list.md`
 - Demo README → `sap/abap/documents/template/demo.md`
 
-The README must strictly follow the corresponding template's structure and formatting.
-
-If the required template file does not exist, **stop the remaining steps** and inform the user that the corresponding template is missing. Do not create or modify the target README based on an assumed format.
+If the required template does not exist, stop and inform the user. Do not assume a format.
 
 #### List README Rules
 
-The first line must be the current folder name followed by `List Preview`.
-
-Example:
-
-```text
-ABAP List Preview
-```
-
-Then leave exactly one blank line. Starting from the third line, list the child folder links and their descriptions.
-
-Each list item must follow this format:
+The first line must be `[Current Folder Name] List Preview`. Then exactly one blank line, followed by child-folder links in the form:
 
 ```text
 - [Folder Name](./folder/) — Description
 ```
 
-There must be no additional blank lines between list items.
+No additional blank lines are allowed between list items.
 
 #### Demo README Rules
 
-The title and section structure must follow `sap/abap/documents/template/demo.md` exactly.
-
-The current template uses the first line format:
+The title and section structure must follow `sap/abap/documents/template/demo.md` exactly:
 
 ```text
 # [Previous folder name] [Current Folder Name]
-```
-
-Then the following headings and subheadings must exist and remain in the same order:
-
-```text
 ## 処理概要
 ## 前提/制約条件
 ### 前提条件：
@@ -80,84 +55,41 @@ Then the following headings and subheadings must exist and remain in the same or
 EOF
 ```
 
-Language rule: unless otherwise noted below, all Demo README content must be written in Japanese. `詳細設計` is the only section exempt from this requirement and may be written in any language, including Chinese.
+Unless otherwise noted, all Demo README content must be Japanese. `詳細設計` is exempt from the language rule.
 
-Rules for the sections:
-
-- `処理概要`: describe the processing contained in the entire Demo folder using concise numbered items.
-- `前提条件：`: list prerequisites. If none exist, use `None`.
-- `制約条件：`: list constraints. If none exist, use `None`.
-- `処理概要図`: record the processing overview diagram/content.
-- `使用公開API`: record **all relevant objects actually used by the Demo, including transitive dependencies**. AI must inspect the actual source files in the entire Demo directory, not only the top-level CDS or README. For every CDS View / View Entity / Projection View, recursively inspect its `select from`, `join`, and `association` targets until the dependency chain reaches SAP standard objects, database tables/views, or other terminal objects. Include every relevant SAP standard CDS/API, custom CDS/View used by the Demo, database table/view, function module, interface, class, BAdI, User-Exit, VOFM Routine, or other extension/API object that is actually referenced by the implementation. Do not omit a dependency merely because it is referenced indirectly through another CDS. Duplicate objects should appear only once. Use the template table columns `API名`, `種類`, `用途`.
-- `使用公開API` classification must identify whether an entry is a SAP standard/public API, custom CDS/View, database table/view, ABAP function module, interface, class, or other object. The table is a dependency inventory, not only a list of objects exposed by the final Service Binding.
-- `詳細設計`: describe the Demo's detailed implementation and processing based on the actual code. There is no requirement to use Chinese, or any other language, for this section.
-- `補足情報`: record the directory structure under `### 目录構造`.
-- `目录構造`: record the actual Demo directory/file structure. Do not add unrelated information under this section.
+- `処理概要`: concise numbered description of the actual Demo processing.
+- `前提条件：`: prerequisites, or `None` if none exist.
+- `制約条件：`: constraints, or `None` if none exist.
+- `処理概要図`: processing overview diagram/content.
+- `使用公開API`: inventory of all relevant objects actually used, including transitive dependencies. Inspect every implementation file in the Demo. For every CDS/View Entity/Projection View, recursively inspect `select from`, `join`, and `association` targets until terminal SAP standard objects, database tables/views, or other terminal objects are reached. Include SAP standard/public APIs, custom CDS/Views, tables/views, function modules, interfaces, classes, BAdIs, User-Exits, VOFM routines, and other referenced objects. Do not omit indirect CDS dependencies. Consolidate duplicates. Use columns `API名`, `種類`, `用途`.
+- `詳細設計`: describe the actual implementation and processing.
+- `補足情報` / `目录構造`: record the actual Demo directory/file structure only.
 - The final line must be `EOF`.
-
-The set and order of `##`/`### ` headings must exactly match the template — no heading may be added, removed, reordered, or renamed unless the template itself is changed. Within the body of each section, content may be elaborated freely (additional paragraphs, sub-lists, tables, diagrams, etc.) as needed to accurately describe the Demo.
 
 ### 3. Self-Check
 
-After creating or updating the README, AI must perform a manual self-check before considering the work complete.
+Before considering README work complete, AI must confirm at minimum:
 
-The self-check must confirm at minimum:
-
-- The README type matches the path depth.
-- The correct template was used.
-- The first line follows the template rule.
-- Required blank-line placement is correct.
-- Required headings and subheadings are present.
-- Heading order follows the template.
-- The content is placed in the correct sections.
-- List items and tables follow the required format.
-- `使用公開API` was built from the actual implementation files in the entire Demo directory.
-- `使用公開API` includes the complete recursive/transitive dependency chain of CDS Views, Views, Database Tables, Enhancement Spots, ABAP classes/interfaces/function modules, and other relevant objects actually used by the Demo.
-- No indirectly referenced CDS/View or terminal database object was omitted merely because it is not directly referenced by the final Projection View.
-- Duplicate dependencies are consolidated into one table row.
-- `補足情報` contains the actual directory structure under `### 目录構造`.
-- The final line is `EOF` for Demo README files.
-- No template-required heading was accidentally removed, and no extra `##`/`### ` heading beyond the template was added.
-- All content is written in Japanese, except `詳細設計`, which may be written in any language.
-- Markdown formatting follows the template.
-- Repository-specific content is accurate and consistent with the files represented by the README.
+- README type and template are correct.
+- Title, blank lines, headings, heading order, tables, and Markdown format are correct.
+- All required headings are present and no extra `##`/`###` headings were added.
+- Content accurately describes actual repository files.
+- `使用公開API` covers the complete recursive/transitive dependency chain without invented objects.
+- Directory structure is actual.
+- Demo README ends with `EOF`.
+- Japanese language rule is satisfied except `詳細設計`.
 
 ### 4. Automated Check
 
-When a repository change includes a `README.md` file, GitHub Actions must execute the README validation process.
+When a repository change includes a `README.md`, GitHub Actions must execute `sap/abap/documents/script/check_readme.py`.
 
-The validation script is:
+The script determines README type from repository-relative path depth and validates List README files against `template/list.md` and Demo README files against `template/demo.md`, including title/format, required headings/order, and Demo `EOF` termination.
 
-`sap/abap/documents/script/check_readme.py`
-
-The script behavior is:
-
-1. Check whether the changed file is `README.md`. If not, stop processing that file successfully.
-2. Determine the README type from the repository-relative path depth:
-   - Third or fourth level → List README.
-   - Fifth level → Demo README.
-   - Other depths → validation failure.
-3. For a List README, validate against `sap/abap/documents/template/list.md`:
-   - Validate the title format `[Current Folder Name] List Preview`.
-   - Validate every content line against `- [Folder Name](./folder/) — Description`.
-   - Do not allow unexpected blank lines in the list content.
-4. For a Demo README, validate against `sap/abap/documents/template/demo.md`:
-   - Validate the title format defined by the template.
-   - Validate that all required headings and subheadings exist.
-   - Validate that the headings and subheadings appear in the template order.
-   - Validate that the README ends with `EOF`.
-
-The automated check does not replace the AI self-check; both are required.
-
-If the automated check fails, AI must inspect the failure, correct the README, perform the self-check again, and submit it for validation again.
+The automated check does not replace the AI self-check. If validation fails, correct the README, self-check again, and validate again.
 
 ## Issue Rules
 
-GitHub Issues are used to communicate AI-generated tasks, validation results, and user confirmation points. The Issue structure must follow the template:
-
-`sap/abap/documents/template/issue.md`
-
-The template structure is:
+GitHub Issues must follow `sap/abap/documents/template/issue.md` exactly:
 
 ```text
 ## 任务
@@ -170,164 +102,172 @@ The template structure is:
 - [ ] {{Checklist item}}
 ```
 
-Every Issue must contain exactly these three sections:
-
-- `任务`: one clear task statement.
-- `要求`: one or more conditions that define what the task must satisfy.
-- `验收条件`: one or more concrete checklist items used to verify that the task is complete.
-
-Rules for creating an Issue:
-
-1. One Issue must do exactly one thing. If the task can be split into two independently closable tasks, create separate Issues.
-2. `要求` must contain one or more concrete requirements.
-3. `验收条件` must contain one or more concrete verification items.
-4. If the task produces an output, represent that output as an `验收条件` item rather than adding a separate `Output` section.
-5. Do not add parent/child relationship fields or sections to the Issue content. Issue relationships are managed separately.
-6. Do not add custom status fields to the Issue content. GitHub Issue `open` / `closed` is the completion state.
-7. Father Issues and Child Issues use exactly the same Issue structure.
-8. The Issue body must follow `sap/abap/documents/template/issue.md`; do not invent additional sections unless the template itself is changed.
+Every Issue must contain exactly these three sections. One Issue represents one task. Do not add custom status, Output, parent, or child fields.
 
 ### Issue Self-Check
 
-Before creating an Issue, AI must confirm:
+Before creating an Issue, confirm:
 
-- The Issue describes exactly one task.
+- Exactly one task is described.
 - `任务` contains one clear task.
-- `要求` contains at least one concrete requirement.
-- `验收条件` contains at least one concrete checklist item.
-- Any expected output is represented in `验收条件`.
-- No custom status, Output, parent, or child fields were added.
-- The body follows the current Issue template exactly.
+- `要求` has at least one concrete requirement.
+- `验收条件` has at least one concrete checklist item.
+- Expected output is represented by an acceptance checklist item.
+- No unapproved sections or status fields exist.
 
-### Issue Creation Flow
+## Review Label Rules — Strict Gate
 
-When creating an Issue:
+**The `review` label means that the task has been completed by AI and is now waiting for Human Review. Therefore, `review` MUST NOT be added to a newly created or unfinished Issue.**
 
-1. Confirm the target repository before creating the Issue.
-2. Determine the single task the Issue needs to accomplish.
-3. Check the current `sap/abap/documents/template/issue.md`.
-4. Write the `任务` section.
-5. Add all required conditions to `要求`.
-6. Add concrete verification points to `验收条件`.
-7. Perform the Issue Self-Check.
-8. Create the GitHub Issue.
+The following rule is absolute:
 
-### Demo Folder Issue Flow
+> **Only when ALL `验收条件` checklist items in the Issue are `[x]` may the `review` label be added. If even one checklist item remains `[ ]`, the Issue MUST NOT have the `review` label.**
 
-When a new fourth-level Demo folder is created under `sap/abap/`, for example `sap/abap/Classical/demo4/` or `sap/abap/rap/demo5/`, GitHub Actions creates one README task Issue automatically.
+This rule applies to all Issues generated or managed by the SAP ABAP README workflow, including Demo README Issues and List README synchronization Issues.
+
+When an Issue is created:
+
+1. Its `验收条件` checklist items must initially be `[ ]`.
+2. Do **not** add `review`.
+3. If an old or incorrectly configured Issue already has `review` while any acceptance item is `[ ]`, remove `review` immediately.
+
+When an Issue is updated:
+
+1. Re-read the current Issue body.
+2. Determine the state of every `验收条件` checkbox.
+3. If any checkbox is `[ ]`, `review` must be absent.
+4. Only if every checkbox is `[x]`, `review` may be added.
+5. Changing an Issue to `review` must never itself mark a checkbox complete.
+
+`review` is therefore a **post-completion label**, not a task-creation label and not an execution permission.
+
+## Demo Folder Issue Flow
+
+When a new fourth-level Demo folder is created under `sap/abap/`, GitHub Actions creates one README task Issue automatically.
 
 The generated Issue must:
 
 1. Use `sap/abap/documents/template/issue.md`.
-2. Contain exactly the three sections `任务`, `要求`, and `验收条件`.
-3. Have exactly one `验收条件` checklist item: successful creation of the Demo's `README.md` with a repository hyperlink.
-4. Require the AI to analyze and understand the entire Demo directory.
-5. Require the AI to read and follow `sap/abap/documents/skill.md` and `sap/abap/documents/template/demo.md`.
-6. Require the README to describe the actual Demo implementation and pass `sap/abap/documents/script/check_readme.py`.
-7. Add the `review` label to the Issue.
+2. Contain exactly `任务`, `要求`, and `验收条件`.
+3. Have exactly one acceptance checklist item for successful creation of the Demo `README.md` with a repository hyperlink.
+4. Require analysis of the entire Demo directory.
+5. Require reading and following `sap/abap/documents/skill.md` and `sap/abap/documents/template/demo.md`.
+6. Require the README to describe the actual implementation and pass `sap/abap/documents/script/check_readme.py`.
+7. **Must not receive the `review` label when created.**
 
-GitHub Actions must not create a README file automatically. Its responsibility at Demo creation time is only to create the README task Issue and add the `review` label. The actual README creation is controlled by this Skill and the Issue label gate below.
+GitHub Actions must not create the README automatically. It only creates the task Issue. Actual README creation is controlled by the `Todo` gate below.
 
-### Todo Label Gate for README Creation
+## List README Synchronization Issue Flow
+
+When the README checker detects that a List README is out of sync with its actual direct child folders, GitHub Actions creates or updates one synchronization Issue.
+
+The synchronization Issue:
+
+1. Uses the standard three Issue sections.
+2. Contains unchecked acceptance criteria while the synchronization is incomplete.
+3. **Must not receive the `review` label while any acceptance criterion is unchecked.**
+4. May receive `review` only after every acceptance criterion is marked `[x]`.
+
+## Todo Label Gate for README Creation
 
 For a Demo README Issue, **AI must not create or modify the Demo `README.md` unless the specified Issue currently has the `Todo` label**.
 
-The presence of the `review` label alone is not permission to create the README. The `Todo` label is the explicit execution gate.
+The presence or absence of `review` never grants permission to create the README. `Todo` is the explicit execution gate.
 
-Before starting README creation, AI must:
+Before starting README creation:
 
 1. Identify the exact Issue assigned to the Demo.
 2. Read the current Issue labels.
 3. Confirm that `Todo` is present.
-4. If `Todo` is absent, stop without creating or modifying the Demo README and inform the user that the Issue is not ready for AI execution.
-5. If `Todo` is present, analyze the Demo files, read the Skill and Demo template, create the README, perform the required self-check, and run the automated validation.
+4. If `Todo` is absent, stop without creating or modifying the Demo README.
+5. If `Todo` is present, analyze the Demo, read the Skill/template, create or modify the README, self-check, and run automated validation.
 
-After the README has been successfully created and validated:
+After successful README creation and validation:
 
-1. Mark the single README `验收条件` checkbox as `[x]`.
-2. Remove the `Todo` label from the Issue.
-3. Keep the `review` label on the Issue.
-4. Do not remove unrelated labels unless the Issue explicitly requires it.
-5. Do not add a new status field to represent completion.
+1. Mark the acceptance checkbox `[x]`.
+2. Remove `Todo`.
+3. Only after confirming that **all** acceptance checkboxes are `[x]`, add `review`.
+4. Do not remove unrelated labels unless explicitly required.
 
-If README validation fails, do not mark the checkbox as complete and do not remove `Todo`. Correct the README and repeat the self-check and validation while the `Todo` gate remains present.
+If validation fails:
 
-This label transition is intentional:
+- Do not mark any acceptance checkbox complete.
+- Do not remove `Todo`.
+- Ensure `review` is absent.
+- Correct the README and validate again.
+
+### Label Transition
 
 ```text
-New Demo folder
+New Task Issue
       ↓
-GitHub Action creates README Issue
+验收条件 = [ ]
       ↓
-review label
+NO review
       ↓
-Human reviews / understands the Issue
+Human adds Todo when ready for AI execution
       ↓
-Todo label added
+AI executes task
       ↓
-AI is allowed to create README
+Self-check + automated validation
       ↓
-README self-check + automated validation
+All 验收条件 = [x]
       ↓
-Success
-      ↓
-[x] 验收条件
 Todo removed
-review retained
+      ↓
+review added
+      ↓
+Human Review
 ```
 
-### Issue Completion
+## Issue Completion
 
-An Issue is complete when all `验收条件` have been satisfied and the Human closes the GitHub Issue.
-
-The AI must not create an additional status field to represent completion.
+An Issue is complete when all `验收条件` have been satisfied and the Human closes the GitHub Issue. The AI must not add a custom status field.
 
 ## Standard Workflow
 
 ```text
-README changed?
-   ├─ No → Stop
-   └─ Yes
-        ↓
-Check README type
-        ↓
-Check corresponding template
-        ↓
-Template exists?
-   ├─ No → Stop and inform user
-   └─ Yes
-        ↓
-Inspect all Demo implementation files
-        ↓
-Build complete recursive dependency inventory
-        ↓
-Create / update README
-        ↓
-AI self-check
-        ↓
-Python check_readme.py
-        ↓
-GitHub Actions validation
-        ↓
+Task Issue created
+   ↓
+All 验收条件 unchecked
+   ↓
+No review label
+   ↓
+Todo gate (when AI execution is required)
+   ↓
+AI executes task
+   ↓
+Self-check
+   ↓
+Automated validation
+   ↓
 Validation passed?
    ├─ No → Correct → Self-check → Validate again
-   └─ Yes → Complete
+   └─ Yes
+        ↓
+Mark ALL 验收条件 [x]
+        ↓
+Remove Todo
+        ↓
+Confirm ALL 验收条件 [x]
+        ↓
+Add review
+        ↓
+Human Review
 ```
 
 ## Important Constraints
 
-1. Do not invent a README structure when the required template is missing.
-2. Do not treat a list README and a demo README as interchangeable.
-3. Do not skip the README self-check because automated validation exists.
-4. Do not consider the README complete until the automated validation has passed.
-5. When updating an existing README, apply the same procedure as when creating a new README.
-6. README content must describe the actual repository files and processing; do not add unsupported implementation details.
-7. All Demo README content must be written in Japanese, except `詳細設計`, which has no language requirement and may be written in any language, including Chinese.
-8. `補足情報` contains the actual directory structure under `### 目录構造`.
-9. `使用公開API` must include the complete recursive/transitive dependency inventory of CDS Views, Views, Database Tables, Enhancement Spots, ABAP classes/interfaces/function modules, and other relevant public objects or APIs actually used by the Demo. Indirect CDS dependencies must not be omitted.
-10. GitHub Actions should run the README checker only when a changed file is `README.md`.
-11. Issue content must follow `sap/abap/documents/template/issue.md` and must not introduce unapproved sections or status fields.
-12. The set and order of `##`/`### ` headings in a Demo README must exactly match the template — no heading may be added or removed. Free elaboration of content within existing sections is allowed.
-13. A newly created fourth-level Demo folder must receive a README task Issue automatically; the Action must not create the README itself.
-14. A Demo README may only be created or modified when the corresponding Issue has the `Todo` label.
-15. After successful README creation and validation, the Issue must have its single checklist item marked `[x]`, `Todo` removed, and `review` retained.
+1. Never invent a README structure when the required template is missing.
+2. Do not treat List README and Demo README as interchangeable.
+3. Do not skip AI self-check.
+4. Do not consider README complete until automated validation passes.
+5. README content must describe actual repository files and processing.
+6. Demo README content must be Japanese except `詳細設計`.
+7. `使用公開API` must include complete recursive/transitive dependencies actually used by the Demo.
+8. Issue content must follow the current Issue template exactly.
+9. A newly created fourth-level Demo folder must receive a README task Issue automatically; the Action must not create the README itself.
+10. A Demo README may only be created or modified when the corresponding Issue has `Todo`.
+11. **`review` may only exist when every `验收条件` checkbox in that Issue is `[x]`.**
+12. **If any acceptance checkbox is `[ ]`, `review` must be removed and must not be re-added until all acceptance criteria are `[x]`.**
+13. After successful AI execution, all acceptance criteria must be checked before `review` is added.
