@@ -1,4 +1,4 @@
-#  
+# rap demo1
 
 ## 処理概要
 本 Demo は SAP RAP（RESTful ABAP Programming Model）を使用した OData V4 Web API の例です。Manufacturing Order を取得し、Virtual Element `LongText` を SADL Exit で実行時に計算します。
