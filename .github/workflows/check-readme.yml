@@ -62,15 +62,63 @@ jobs:
 
             echo "Checking $file"
 
-            issue_title="README validation failed: $file"
-            existing_issue=$(gh issue list \
-              --repo "$GH_REPO" \
-              --state open \
-              --json number,title \
-              --jq ".[] | select(.title == \"$issue_title\") | .number" | head -n 1)
+            output=$(python sap/abap/documents/script/check_readme.py "$file" 2>&1) || check_status=$?
+            check_status=${check_status:-0}
+            printf '%s\n' "$output"
 
-            if output=$(python sap/abap/documents/script/check_readme.py "$file" 2>&1); then
-              echo "$output"
+            sync_lines=$(printf '%s\n' "$output" | grep '^LIST_SYNC_REQUIRED: ' || true)
+            if [ -n "$sync_lines" ]; then
+              while IFS= read -r sync_line; do
+                [ -z "$sync_line" ] && continue
+
+                payload=${sync_line#LIST_SYNC_REQUIRED: }
+                list_file=${payload%%|*}
+                details=${payload#*|}
+                missing=${details#missing=}
+                missing=${missing%%|extra=*}
+                extra=${details#*|extra=}
+
+                issue_title="更新 List README：$list_file"
+                existing_issue=$(gh issue list \
+                  --repo "$GH_REPO" \
+                  --state open \
+                  --search "in:title $issue_title" \
+                  --json number,title \
+                  --jq ".[] | select(.title == \"$issue_title\") | .number" | head -n 1)
+
+                list_link="https://github.com/$GH_REPO/blob/main/$list_file"
+                requirements="- [$list_file]($list_link) 必须与当前实际子文件夹保持同步。"
+                if [ -n "$missing" ]; then
+                  requirements="$requirements\n- 当前实际存在但未列出的子文件夹：$missing。"
+                fi
+                if [ -n "$extra" ]; then
+                  requirements="$requirements\n- List README 中存在但当前实际不存在的子文件夹：$extra。"
+                fi
+
+                issue_body=$(printf '## 任务\n更新 [%s](%s)，使其与当前实际子文件夹保持同步。\n\n## 要求\n%s\n- 按 sap/abap/documents/skill.md 和 sap/abap/documents/template/list.md 的规则维护 List README。\n- 更新后必须通过 sap/abap/documents/script/check_readme.py 自动检查。\n\n## 验收条件\n- [ ] [%s](%s) 已与实际子文件夹同步，并通过 README 自动检查。\n' "$list_file" "$list_link" "$requirements" "$list_file" "$list_link")
+
+                if [ -n "$existing_issue" ]; then
+                  echo "Updating existing List README synchronization Issue #$existing_issue"
+                  gh issue edit "$existing_issue" --repo "$GH_REPO" --body "$issue_body"
+                  gh issue edit "$existing_issue" --repo "$GH_REPO" --add-label review
+                else
+                  echo "Creating List README synchronization Issue: $issue_title"
+                  gh label create review --repo "$GH_REPO" --force --color 0366d6 --description "README review required"
+                  gh issue create --repo "$GH_REPO" --title "$issue_title" --body "$issue_body" --label review
+                fi
+              done <<< "$sync_lines"
+
+              validation_failed=1
+            fi
+
+            if [ "$check_status" -eq 0 ]; then
+              issue_title="README validation failed: $file"
+              existing_issue=$(gh issue list \
+                --repo "$GH_REPO" \
+                --state open \
+                --search "in:title $issue_title" \
+                --json number,title \
+                --jq ".[] | select(.title == \"$issue_title\") | .number" | head -n 1)
 
               if [ -n "$existing_issue" ]; then
                 echo "README validation passed. Updating existing Issue #$existing_issue"
@@ -99,14 +147,21 @@ jobs:
               continue
             fi
 
-            validation_failed=1
-            echo "$output"
-
-            errors=$(printf '%s\n' "$output" | grep -F '❌ FAIL' || true)
-            if [ -z "$errors" ]; then
-              errors="- ❌ FAIL: README 验证失败，请查看完整日志。"
+            non_sync_errors=$(printf '%s\n' "$output" | grep -F '❌ FAIL' | grep -v 'List README' || true)
+            if [ -z "$non_sync_errors" ]; then
+              continue
             fi
 
+            validation_failed=1
+            issue_title="README validation failed: $file"
+            existing_issue=$(gh issue list \
+              --repo "$GH_REPO" \
+              --state open \
+              --search "in:title $issue_title" \
+              --json number,title \
+              --jq ".[] | select(.title == \"$issue_title\") | .number" | head -n 1)
+
+            errors="$non_sync_errors"
             file_link="https://github.com/$GH_REPO/blob/main/$file"
             issue_body=$(printf '## 任务\n修正 [%s](%s) 的 README 格式，使其通过 README 自动检查。\n\n## 要求\n### 自动检查失败信息：\n\n%s\n\n## 验收条件\n- [ ] [%s](%s) 通过 `sap/abap/documents/script/check_readme.py` 检查。\n' "$file" "$file_link" "$errors" "$file" "$file_link")
 
