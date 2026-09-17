@@ -71,7 +71,7 @@ jobs:
             echo "$output"
 
             issue_title="README validation failed: $file"
-            issue_body=$(printf '## 任务\n修正 `%s` 的 README 格式，使其通过 README 自动检查。\n\n## 要求\n### 自动检查失败信息：\n%s\n\n## 验收条件\n- [ ] 修正 `%s` 中导致检查失败的内容。\n- [ ] `%s` 通过 `sap/abap/documents/script/check_readme.py` 检查。\n' "$file" "$output" "$file" "$file")
+            issue_body=$(printf '## 任务\n修正 `%s` 的 README 格式，使其通过 README 自动检查。\n\n## 要求\n### 自动检查失败信息：\n- %s\n\n## 验收条件\n- [ ] 修正 `%s` 中导致检查失败的内容。\n- [ ] `%s` 通过 `sap/abap/documents/script/check_readme.py` 检查。\n' "$file" "$output" "$file" "$file")
 
             existing_issue=$(gh issue list \
               --repo "$GH_REPO" \
