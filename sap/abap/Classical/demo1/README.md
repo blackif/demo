@@ -1,25 +1,53 @@
-# Classical ABAP Demo1
- 
-这是一个 **SAP拡張** 的开发示例。
+# Classical demo1
 
-本 Demo 主要用于说明基于 **VOFM Routine / ABAP Class** 的 SAP 拡張开发方式。
+## 処理概要
+本 Demo は、SD 請求処理における VOFM Routine と ABAP Class を使用した SAP 拡張の例です。
 
-## 开发内容
+1. VOFM Routine 901 / 902 から Include を呼び出します。
+2. Include から `YCLSD00XX_001_01` を呼び出します。
+3. Customer Group 2（`KVGR2`）を使用して `VBRK-ZUKRI` を設定します。
+4. Routine 902 では `LIKP-PODAT` が存在する場合、`VBRK-FKDAT` に設定します。
 
-- SAP 拡張
-- VOFM Routine
-- Data Transfer Routine
-- ABAP Class
-- set Billing Document Header (`VBRK`)
+## 前提/制約条件
 
-## 示例概要
+### 前提条件：
+- Billing Document Header（`VBRK`）を処理対象とします。
+- Customer Group 2（`KVGR2`）を請求分割条件として使用します。
 
-本 Demo 以销售与分销（SD）开票相关的 VOFM Routine 为例，使用客户组2（KVGR2）控制发票是否需要分开。
+### 制約条件：
+- Routine 901 は `VBRK-ZUKRI` の設定による Billing Split を対象とします。
+- Routine 902 は POD Date が存在する場合のみ Billing Date を更新します。
+  
+## 処理概要図
+```mermaid
+flowchart TD
+    A[VOFM Routine 901] --> B[Include ysd00XX_001_01]
+    C[VOFM Routine 902] --> D[Include ysd00XX_001_02]
+    B --> E[YCLSD00XX_001_01]
+    D --> E
+    E --> F[Customer Group 2 KVGR2]
+    F --> G[set VBRK-ZUKRI]
+    G --> H[Billing Split]
+    D --> I{LIKP-PODAT exists?}
+    I -- Yes --> J[set VBRK-FKDAT]
+    I -- No --> K[Keep existing Billing Date]
+    J --> H
+    K --> H
+```
 
-主要处理流程：
+## 依存関係
 
-### Case 1：出库标准 901
+### 使用公開API
 
+| API名 | 種類 | 用途 |
+|---|---|---|
+| `VBRK` | Database Table | Billing Document Header の更新対象 |
+| `LIKP` | Database Table | POD Date（`PODAT`）の取得 |
+| `YCLSD00XX_001_01` | ABAP Class | 請求分割条件・Billing Date の業務ロジック |
+
+## 詳細設計
+
+### Case 1：出庫標準 901
 ```text
 VOFM Routine 901
         ↓
@@ -34,8 +62,7 @@ set Billing Document Header (VBRK-ZUKRI)
 Billing Split
 ```
 
-### Case 2：收货标准 902
-
+### Case 2：收货標準 902
 ```text
 VOFM Routine 902
         ↓
@@ -54,41 +81,7 @@ set Billing Date (VBRK-FKDAT)
 Billing Split
 ```
 
-## Classical ABAP Demo1 流程图
-
-### Case 1：出库标准 901
-
-```mermaid
-flowchart TD
-    A1[VOFM Routine 901] --> B1[Include ysd00XX_001_01]
-    B1 --> C1[YCLSD00XX_001_01]
-    C1 --> D1[Customer Group 2 KVGR2]
-    D1 --> E1[set VBRK-ZUKRI]
-    E1 --> F1[Billing Split]
-```
-
-### Case 2：收货标准 902
-
-```mermaid
-flowchart TD
-    A2[VOFM Routine 902] --> B2[Include ysd00XX_001_02]
-    B2 --> C2[YCLSD00XX_001_01]
-    C2 --> D2[Customer Group 2 KVGR2]
-    D2 --> E2[set VBRK-ZUKRI]
-    E2 --> F2{LIKP-PODAT exists?}
-    F2 -- Yes --> G2[set VBRK-FKDAT = LIKP-PODAT]
-    F2 -- No --> H2[Keep existing Billing Date]
-    G2 --> I2[Billing Split]
-    H2 --> I2
-```
-
-## 简要调用关系
-
-1. **Case 1：出库标准 901**：VOFM Routine 901 通过 Include `ysd00XX_001_01` 调用 ABAP Class `YCLSD00XX_001_01`，根据客户组2（`KVGR2`）设置 Billing Document Header (`VBRK`) 的组合条件 `VBRK-ZUKRI`，从而控制发票是否需要分开。
-2. **Case 2：收货标准 902**：VOFM Routine 902 通过 Include `ysd00XX_001_02` 调用 ABAP Class `YCLSD00XX_001_01`，首先根据客户组2（`KVGR2`）设置 `VBRK-ZUKRI`，然后检查收货日（POD Date，`LIKP-PODAT`）。当 `LIKP-PODAT` 存在时，将其设置为 Billing Date `VBRK-FKDAT`；如果不存在，则保持原有 Billing Date 不变。
-
-## 目录结构
-
+目录结构：
 ```text
 demo1/
 ├── class/
@@ -98,3 +91,14 @@ demo1/
 │   └── ysd00XX_001_02.abap
 └── README.md
 ```
+
+## 補足情報
+
+### 消息内容
+
+| メッセージ内容 | 設定内容 |
+|---|---|
+| Billing Split | `VBRK-ZUKRI` を使用して請求分割条件を設定 |
+| Billing Date | `LIKP-PODAT` を `VBRK-FKDAT` に設定 |
+
+EOF
