@@ -97,14 +97,7 @@ set_data
 
 ## 補足情報
 
-### 消息内容
-
-| メッセージ内容 | 設定内容 |
-|---|---|
-| `004` | Company Code Parameter Check 失败 |
-| `005` | Customer / Accounting Item / Bank Charge / Matching 数据取得或匹配失败 |
-
-目录结构：
+### 目录構造
 ```text
 demo3/
 ├── README.md
