@@ -59,11 +59,11 @@ jobs:
 
           while IFS= read -r file; do
             [ -z "$file" ] && continue
+            check_status=0
 
             echo "Checking $file"
 
             output=$(python sap/abap/documents/script/check_readme.py "$file" 2>&1) || check_status=$?
-            check_status=${check_status:-0}
             printf '%s\n' "$output"
 
             sync_lines=$(printf '%s\n' "$output" | grep '^LIST_SYNC_REQUIRED: ' || true)
