@@ -76,7 +76,7 @@ Then the following headings and subheadings must exist and remain in the same or
 ### 使用公開API
 ## 詳細設計
 ## 補足情報
-### 消息内容
+### 目录構造
 EOF
 ```
 
@@ -88,13 +88,14 @@ Rules for the sections:
 - `前提条件：`: list prerequisites. If none exist, use `None`.
 - `制約条件：`: list constraints. If none exist, use `None`.
 - `処理概要図`: record the processing overview diagram/content.
-- `使用公開API`: record the CDS Views, Views, Database Tables, Enhancement Spots (BAdI, User-Exit, VOFM Routine, and Class methods used as extension points), and other relevant SAP objects or APIs actually used by the Demo. If none exist, use `None`. Use the template table columns `API名`, `種類`, `用途`.
+- `使用公開API`: record **all relevant objects actually used by the Demo, including transitive dependencies**. AI must inspect the actual source files in the entire Demo directory, not only the top-level CDS or README. For every CDS View / View Entity / Projection View, recursively inspect its `select from`, `join`, and `association` targets until the dependency chain reaches SAP standard objects, database tables/views, or other terminal objects. Include every relevant SAP standard CDS/API, custom CDS/View used by the Demo, database table/view, function module, interface, class, BAdI, User-Exit, VOFM Routine, or other extension/API object that is actually referenced by the implementation. Do not omit a dependency merely because it is referenced indirectly through another CDS. Duplicate objects should appear only once. Use the template table columns `API名`, `種類`, `用途`.
+- `使用公開API` classification must identify whether an entry is a SAP standard/public API, custom CDS/View, database table/view, ABAP function module, interface, class, or other object. The table is a dependency inventory, not only a list of objects exposed by the final Service Binding.
 - `詳細設計`: describe the Demo's detailed implementation and processing based on the actual code. There is no requirement to use Chinese, or any other language, for this section.
-- `補足情報`: record message information only. If the Demo has no messages, use `None`.
-- `消息内容`: when messages exist, use the message table defined by the template.
+- `補足情報`: record the directory structure under `### 目录構造`.
+- `目录構造`: record the actual Demo directory/file structure. Do not add unrelated information under this section.
 - The final line must be `EOF`.
 
-The set and order of `##`/`### ` headings must exactly match the template — no heading may be added, removed, reordered, or renamed unless the template itself is changed. Within the body of each section, content may be elaborated freely (additional paragraphs, sub-lists, tables, diagrams, etc.) as needed to accurately describe the Demo, as long as no new `##`/`### ` heading is introduced.
+The set and order of `##`/`### ` headings must exactly match the template — no heading may be added, removed, reordered, or renamed unless the template itself is changed. Within the body of each section, content may be elaborated freely (additional paragraphs, sub-lists, tables, diagrams, etc.) as needed to accurately describe the Demo.
 
 ### 3. Self-Check
 
@@ -110,8 +111,11 @@ The self-check must confirm at minimum:
 - Heading order follows the template.
 - The content is placed in the correct sections.
 - List items and tables follow the required format.
-- `使用公開API` records the CDS Views, Views, Database Tables, Enhancement Spots (BAdI, User-Exit, VOFM Routine, extension-point Class methods), and other relevant objects actually used by the Demo, or `None` when there are none.
-- `補足情報` contains only message information, or `None` when there are no messages.
+- `使用公開API` was built from the actual implementation files in the entire Demo directory.
+- `使用公開API` includes the complete recursive/transitive dependency chain of CDS Views, Views, Database Tables, Enhancement Spots, ABAP classes/interfaces/function modules, and other relevant objects actually used by the Demo.
+- No indirectly referenced CDS/View or terminal database object was omitted merely because it is not directly referenced by the final Projection View.
+- Duplicate dependencies are consolidated into one table row.
+- `補足情報` contains the actual directory structure under `### 目录構造`.
 - The final line is `EOF` for Demo README files.
 - No template-required heading was accidentally removed, and no extra `##`/`### ` heading beyond the template was added.
 - All content is written in Japanese, except `詳細設計`, which may be written in any language.
@@ -229,6 +233,10 @@ Template exists?
    ├─ No → Stop and inform user
    └─ Yes
         ↓
+Inspect all Demo implementation files
+        ↓
+Build complete recursive dependency inventory
+        ↓
 Create / update README
         ↓
 AI self-check
@@ -251,8 +259,8 @@ Validation passed?
 5. When updating an existing README, apply the same procedure as when creating a new README.
 6. README content must describe the actual repository files and processing; do not add unsupported implementation details.
 7. All Demo README content must be written in Japanese, except `詳細設計`, which has no language requirement and may be written in any language, including Chinese.
-8. `補足情報` is limited to message information; if there are no messages, use `None`.
-9. `使用公開API` must include the CDS Views, Views, Database Tables, Enhancement Spots (BAdI, User-Exit, VOFM Routine, extension-point Class methods), and other relevant public objects or APIs actually used by the Demo.
+8. `補足情報` contains the actual directory structure under `### 目录構造`.
+9. `使用公開API` must include the complete recursive/transitive dependency inventory of CDS Views, Views, Database Tables, Enhancement Spots, ABAP classes/interfaces/function modules, and other relevant public objects or APIs actually used by the Demo. Indirect CDS dependencies must not be omitted.
 10. GitHub Actions should run the README checker only when a changed file is `README.md`.
 11. Issue content must follow `sap/abap/documents/template/issue.md` and must not introduce unapproved sections or status fields.
 12. The set and order of `##`/`### ` headings in a Demo README must exactly match the template — no heading may be added or removed. Free elaboration of content within existing sections is allowed.
