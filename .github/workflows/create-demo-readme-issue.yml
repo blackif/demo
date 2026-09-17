@@ -1,0 +1,114 @@
+name: Create Demo README Issue
+
+on:
+  push:
+    paths:
+      - 'sap/abap/**'
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  create-demo-readme-issue:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Detect newly created Demo folders and create Issues
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          BEFORE_SHA: ${{ github.event.before }}
+          AFTER_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+
+          if [ "$BEFORE_SHA" = "0000000000000000000000000000000000000000" ]; then
+            echo "Initial push detected. There is no previous tree to compare."
+            exit 0
+          fi
+
+          declare -A demo_dirs=()
+
+          while IFS=$'\t' read -r status file; do
+            [ -z "$file" ] && continue
+
+            # A Demo is the fourth repository path level:
+            # sap/abap/<list>/<demo>/...
+            if [[ "$file" =~ ^sap/abap/[^/]+/[^/]+/ ]]; then
+              demo_dir="${BASH_REMATCH[0]%/}"
+            else
+              continue
+            fi
+
+            # Only react when the Demo directory itself did not exist in the
+            # previous commit. Git tracks files, so a new directory is detected
+            # by the first files added below that directory.
+            if git cat-file -e "$BEFORE_SHA:$demo_dir" 2>/dev/null; then
+              continue
+            fi
+
+            # Only added files can establish a newly created Demo directory.
+            if [[ "$status" != A* ]]; then
+              continue
+            fi
+
+            demo_dirs["$demo_dir"]=1
+          done < <(git diff --name-status "$BEFORE_SHA" "$AFTER_SHA")
+
+          if [ "${#demo_dirs[@]}" -eq 0 ]; then
+            echo "No newly created Demo folders detected."
+            exit 0
+          fi
+
+          gh label create review --repo "$GH_REPO" --force --color 0366d6 --description "README review required"
+
+          for demo_dir in "${!demo_dirs[@]}"; do
+            issue_title="创建 README：$demo_dir"
+            file_link="https://github.com/$GH_REPO/blob/main/$demo_dir"
+
+            existing_issue=$(gh issue list \
+              --repo "$GH_REPO" \
+              --state open \
+              --search "in:title $issue_title" \
+              --json number,title \
+              --jq ".[] | select(.title == \"$issue_title\") | .number" | head -n 1)
+
+            if [ -n "$existing_issue" ]; then
+              echo "Issue #$existing_issue already exists for $demo_dir."
+              continue
+            fi
+
+            issue_body=$(cat <<EOF
+## 任务
+为 [$demo_dir]($file_link) 创建 README 文件。
+
+## 要求
+- 分析并理解该 Demo 的全部实际内容。
+- 阅读并理解 [sap/abap/documents/skill.md](https://github.com/$GH_REPO/blob/main/sap/abap/documents/skill.md) 中与 Demo README 创建相关的规则。
+- 使用 [sap/abap/documents/template/demo.md](https://github.com/$GH_REPO/blob/main/sap/abap/documents/template/demo.md) 规定的结构和格式创建 README。
+- README 内容必须基于该 Demo 文件夹中的实际文件和处理内容，不得凭空补充实现内容。
+- 完成后执行 README 自检，并通过 sap/abap/documents/script/check_readme.py 的自动检查。
+- README 创建完成后，本 Issue 的验收条件复选框应标记为完成，并按 Skill 规则处理 Issue 标签。
+
+## 验收条件
+- [ ] 成功创建 [$demo_dir/README.md](https://github.com/$GH_REPO/blob/main/$demo_dir/README.md)。
+EOF
+)
+
+            echo "Creating Issue for $demo_dir"
+            gh issue create \
+              --repo "$GH_REPO" \
+              --title "$issue_title" \
+              --body "$issue_body" \
+              --label review
+          done
