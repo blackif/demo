@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate SAP ABAP README files against the repository README rules."""
+"""Validate SAP ABAP README files and detect List README synchronization gaps."""
 
 from __future__ import annotations
 
@@ -45,6 +45,68 @@ def read_template(path: Path) -> str:
     return path.read_text(encoding="utf-8")
 
 
+def get_list_items(lines: list[str]) -> dict[str, str]:
+    """Return normalized child-folder names and their descriptions from a List README."""
+    items: dict[str, str] = {}
+    for line in lines[2:]:
+        match = LIST_ITEM_RE.fullmatch(line.strip())
+        if not match:
+            continue
+        folder_path = match.group(2).removeprefix("./").removesuffix("/")
+        items[folder_path.lower()] = match.group(3)
+    return items
+
+
+def get_actual_child_folders(list_readme: Path) -> set[str]:
+    """Return immediate child directories represented by a List README."""
+    parent_dir = ROOT / list_readme.parent
+    if not parent_dir.exists():
+        return set()
+    return {
+        child.name.lower()
+        for child in parent_dir.iterdir()
+        if child.is_dir() and not child.name.startswith(".")
+    }
+
+
+def check_list_synchronization(
+    list_relative_path: Path,
+    lines: list[str],
+    *,
+    emit_marker: bool = True,
+) -> bool:
+    """Check whether a List README contains exactly the current child folders."""
+    list_items = get_list_items(lines)
+    actual_folders = get_actual_child_folders(list_relative_path)
+    listed_folders = set(list_items)
+
+    missing = sorted(actual_folders - listed_folders)
+    extra = sorted(listed_folders - actual_folders)
+
+    if not missing and not extra:
+        print(f"- ✅ PASS: List README 子文件夹同步正常（{list_relative_path}）")
+        return True
+
+    if missing:
+        print(
+            f"- ❌ FAIL: List README 缺少实际存在的子文件夹：{', '.join(missing)}"
+        )
+    if extra:
+        print(
+            f"- ❌ FAIL: List README 包含不存在的子文件夹：{', '.join(extra)}"
+        )
+
+    if emit_marker:
+        print(
+            "LIST_SYNC_REQUIRED: "
+            f"{list_relative_path}"
+            f"|missing={','.join(missing)}"
+            f"|extra={','.join(extra)}"
+        )
+
+    return False
+
+
 def check_list_readme(relative_path: Path, lines: list[str]) -> bool:
     template = read_template(LIST_TEMPLATE)
     passed = True
@@ -86,6 +148,9 @@ def check_list_readme(relative_path: Path, lines: list[str]) -> bool:
         passed = False
     else:
         print("- ✅ PASS: 所有 List 项目格式正确")
+
+    if not check_list_synchronization(relative_path, lines):
+        passed = False
 
     return passed
 
@@ -144,6 +209,20 @@ def check_demo_readme(relative_path: Path, lines: list[str]) -> bool:
     else:
         print("- ❌ FAIL: README.md 必须以 EOF 结尾")
         passed = False
+
+    # A Demo README change can make its parent List README stale.
+    parent_list = relative_path.parent.parent / "README.md"
+    if determine_readme_type(parent_list) == "list":
+        print(f"- 🔎 CHECK: 同步检查父级 List README：{parent_list}")
+        parent_absolute = ROOT / parent_list
+        if not parent_absolute.exists():
+            print(f"- ❌ FAIL: 父级 List README 不存在：{parent_list}")
+            print(f"LIST_SYNC_REQUIRED: {parent_list}|missing={relative_path.parent.name}|extra=")
+            passed = False
+        else:
+            parent_lines = parent_absolute.read_text(encoding="utf-8").splitlines()
+            if not check_list_synchronization(parent_list, parent_lines):
+                passed = False
 
     return passed
 
