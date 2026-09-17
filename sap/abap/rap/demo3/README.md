@@ -11,7 +11,7 @@
 - `YI_PP_MOrderOperation` および `YC_PP_MOrderOperation` が参照する SAP 標準 CDS が利用可能であること。
   
 ### 制約条件：
-- `I_WorkCenterText` の取得条件は言語 `J` に固定されている。
+- `I_WorkCenterText` の関連付け条件は言語 `J` に固定されている。
   
 ## 処理概要図
 
