@@ -62,7 +62,6 @@ jobs:
             check_status=0
 
             echo "Checking $file"
-
             output=$(python sap/abap/documents/script/check_readme.py "$file" 2>&1) || check_status=$?
             printf '%s\n' "$output"
 
@@ -100,11 +99,12 @@ jobs:
                 if [ -n "$existing_issue" ]; then
                   echo "Updating existing List README synchronization Issue #$existing_issue"
                   gh issue edit "$existing_issue" --repo "$GH_REPO" --body "$issue_body"
-                  gh issue edit "$existing_issue" --repo "$GH_REPO" --add-label review
+                  # Unfinished Issue must never have review.
+                  gh issue edit "$existing_issue" --repo "$GH_REPO" --remove-label review || true
                 else
                   echo "Creating List README synchronization Issue: $issue_title"
-                  gh label create review --repo "$GH_REPO" --force --color 0366d6 --description "README review required"
-                  gh issue create --repo "$GH_REPO" --title "$issue_title" --body "$issue_body" --label review
+                  # Do not add review. The acceptance checkbox is still unchecked.
+                  gh issue create --repo "$GH_REPO" --title "$issue_title" --body "$issue_body"
                 fi
               done <<< "$sync_lines"
 
@@ -131,17 +131,11 @@ jobs:
                 issue_body=$(printf '%s\n' "$issue_body" | \
                   sed -E 's#^- \[ \] (.*) 通过 `sap\/abap\/documents\/script\/check_readme\.py` 检查。$#- [x] \1 通过 `sap/abap/documents/script/check_readme.py` 检查。#')
 
-                gh issue edit "$existing_issue" \
-                  --repo "$GH_REPO" \
-                  --body "$issue_body"
+                gh issue edit "$existing_issue" --repo "$GH_REPO" --body "$issue_body"
 
-                gh label create review \
-                  --repo "$GH_REPO" \
-                  --force
-
-                gh issue edit "$existing_issue" \
-                  --repo "$GH_REPO" \
-                  --add-label review
+                # review is added only after the acceptance checkbox is [x].
+                gh label create review --repo "$GH_REPO" --force --color 0366d6 --description "README review required"
+                gh issue edit "$existing_issue" --repo "$GH_REPO" --add-label review
               fi
 
               continue
@@ -168,6 +162,8 @@ jobs:
             if [ -n "$existing_issue" ]; then
               echo "Updating existing Issue #$existing_issue"
               gh issue edit "$existing_issue" --repo "$GH_REPO" --body "$issue_body"
+              # Validation is not complete, so review must be absent.
+              gh issue edit "$existing_issue" --repo "$GH_REPO" --remove-label review || true
             else
               echo "Creating Issue: $issue_title"
               gh issue create --repo "$GH_REPO" --title "$issue_title" --body "$issue_body"
