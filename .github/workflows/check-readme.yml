@@ -147,7 +147,7 @@ jobs:
               continue
             fi
 
-            non_sync_errors=$(printf '%s\n' "$output" | grep -F '❌ FAIL' | grep -v 'List README' || true)
+            non_sync_errors=$(printf '%s\n' "$output" | grep -F '❌ FAIL' | grep -v -E 'List README|README 自动检查未通过' || true)
             if [ -z "$non_sync_errors" ]; then
               continue
             fi
