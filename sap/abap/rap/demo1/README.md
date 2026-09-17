@@ -1,99 +1,95 @@
-# RAP Demo1
+# rap demo1
 
-这是一个 **SAP RAP（RESTful ABAP Programming Model）** 开发示例。
- 
-本 Demo 主要用于说明 **OData V4 - Web API** 的 RAP 开发方式。
+## 処理概要
+本 Demo は SAP RAP（RESTful ABAP Programming Model）を使用した OData V4 Web API の例です。Manufacturing Order を取得し、Virtual Element `LongText` を SADL Exit で実行時に計算します。
 
-## 开发内容
+1. Service Binding 通过 OData V4 Web API 对外提供 Service。
+2. Projection View `ZC_PP_ManufacturingOrder` 作为对外数据模型。
+3. `ZC_PP_ManufacturingOrder` 基于 `ZI_PP_ManufacturingOrder`。
+4. Virtual Element `LongText` 在运行时由 SADL Exit `Z_PP_LONGTEXT_GET` 计算。
+5. `READ_TEXT` 根据生产订单对应的 `Tdname` 读取长文本并返回最终结果。
 
-- RAP（RESTful ABAP Programming Model）
-- OData V4 - Web API
-- CDS View Entity
-- Projection View
-- Virtual Element
-- SADL Exit
-- `IF_SADL_EXIT_CALC_ELEMENT_READ`
-- OData V4 Service Binding
+## 前提/制約条件
 
-## 示例概要
+### 前提条件：
+- 使用 RAP Service Binding 暴露 OData V4 Web API。
+- `ZC_PP_ManufacturingOrder` 中存在 Virtual Element `LongText`。
+- SADL Exit Class 实现 `IF_SADL_EXIT_CALC_ELEMENT_READ`。
 
-本 Demo 以生产订单（Manufacturing Order）为例，通过 RAP 构建 OData V4 Web API Service，并通过 Virtual Element 在运行时计算 Long Text 数据。
-
-主要处理流程：
-
-```text
-OData V4 - Web API
-        ↓
-Service Binding
-        ↓
-Service Definition
-        ↓
-Projection View
-ZC_PP_ManufacturingOrder
-        ↓
-Interface / Composite View
-ZI_PP_ManufacturingOrder
-        ↓
-OData V4 Response
-```
-
-## RAP Demo1 流程图
-
+### 制約条件：
+- `LongText` 不是直接从数据库读取的字段。
+- 长文本读取依赖生产订单对应的 `Tdname`。
+  
+## 処理概要図
 ```mermaid
 flowchart TD
     A[Service Binding] --> B[ZC_PP_ManufacturingOrder]
     B --> C[ZI_PP_ManufacturingOrder]
-
     C --> D[I_ManufacturingOrder]
-    C --> E[ZI_PP_ACMSystemStatus]
-    C --> F[I_ProductionVersion]
-    C --> G[I_ProductText]
-    C --> H[I_InventoryUsabilityCodeText]
-    C --> I[ZI_PP_LongTextMapping]
-    C --> J[I_StatusObjectStatusChange]
-
-    B --> K[Virtual Element: LongText]
-    K --> L[Z_PP_LONGTEXT_GET]
-    L --> M[IF_SADL_EXIT_CALC_ELEMENT_READ]
-    M --> N[get_calculation_info]
-    M --> O[calculate]
-    O --> P[READ_TEXT]
-    P --> Q[LongText]
-
-    D --> R[Manufacturing Order Data]
-    E --> S[System Status]
-    I --> T[Tdname]
-    R --> U[Final Result]
-    S --> U
-    T --> U
-    Q --> U
-
-    U --> V[OData V4 Response]
+    B --> E[Virtual Element LongText]
+    E --> F[Z_PP_LONGTEXT_GET]
+    F --> G[IF_SADL_EXIT_CALC_ELEMENT_READ]
+    G --> H[get_calculation_info]
+    G --> I[calculate]
+    I --> J[READ_TEXT]
+    J --> K[LongText]
+    D --> L[Final Result]
+    K --> L
+    L --> M[OData V4 Response]
 ```
 
-## 简要调用关系
+## 依存関係
 
-1. Service Binding 对外暴露 RAP Service。
-2. Service Definition 定义对外暴露的 RAP Service 对象。
-3. Projection View `ZC_PP_ManufacturingOrder` 作为对外数据模型。
-4. `ZC_PP_ManufacturingOrder` 基于 `ZI_PP_ManufacturingOrder`。
-5. `ZI_PP_ManufacturingOrder` 从 `I_ManufacturingOrder` 获取生产订单，并通过 Join / Association 获取状态、生产版本、产品文本、库存可用性文本、长文本名称等数据。
-6. `ZI_PP_ManufacturingOrder` 中包含一个 Virtual Element `LongText`，该字段不直接从数据库读取，而是在运行时由 RAP/SADL 机制计算。
-7. SADL Exit `Z_PP_LONGTEXT_GET` 实现 `IF_SADL_EXIT_CALC_ELEMENT_READ`，由 SADL 在处理 Virtual Element 时调用 `calculate` 等方法。`READ_TEXT` 根据生产订单对应的 `Tdname` 读取长文本内容，并将结果写入 Virtual Element `LongText`。
-8. RAP Service 最终通过 OData V4 Web API 返回包含计算结果的数据。
+### 使用公開API
 
-## 目录结构
+| API名 | 種類 | 用途 |
+|---|---|---|
+| `I_ManufacturingOrder` | CDS View | Manufacturing Order Data の取得 |
+| `ZI_PP_ManufacturingOrder` | CDS View Entity | Interface / Composite Data Model |
+| `ZC_PP_ManufacturingOrder` | CDS Projection View | OData V4 の対外データモデル |
+| `Z_PP_LONGTEXT_GET` | ABAP Class | Virtual Element の計算 |
+| `IF_SADL_EXIT_CALC_ELEMENT_READ` | ABAP Interface | SADL Calculation Exit の実装 |
+| `READ_TEXT` | Function Module | Long Text の取得 |
 
+## 詳細設計
+
+### Service / CDS
+- Service Binding → Service Definition → Projection View → Interface / Composite View の構成です。
+- `ZI_PP_ManufacturingOrder` は `I_ManufacturingOrder`、System Status、Production Version、Product Text、Inventory Usability Text、Long Text Mapping などを組み合わせます。
+
+### Virtual Element
+`LongText` は Virtual Element であり、SADL が `Z_PP_LONGTEXT_GET` を呼び出します。
+
+処理順序：
 ```text
-demo1/
-├── Service Bindings       <-dummy
-├── Service Definitions    <-dummy
-├── cds/
-│   ├── ZC_PP_ManufacturingOrder
-│   ├── ZI_PP_ACMSystemStatus
-│   ├── ZI_PP_LongTextMapping
-│   └── ZI_PP_ManufacturingOrder
-├── class/
-│   └── z_pp_longtext_get.abap
-└── README.md
+Virtual Element LongText
+        ↓
+Z_PP_LONGTEXT_GET
+        ↓
+get_calculation_info
+        ↓
+calculate
+        ↓
+READ_TEXT
+        ↓
+LongText
 ```
+
+### 主要データ
+| Field / Object | 用途 |
+|---|---|
+| `Tdname` | Long Text の Text Name |
+| `LongText` | Runtime Calculation Result |
+| `I_ManufacturingOrder` | Manufacturing Order Data |
+| `ZI_PP_LongTextMapping` | Long Text Name / Mapping Data |
+
+## 補足情報
+
+### 消息内容
+
+| メッセージ内容 | 設定内容 |
+|---|---|
+| Long Text Calculation | `Z_PP_LONGTEXT_GET` による Runtime Calculation |
+| OData V4 Response | 計算済み `LongText` を含む結果を返却 |
+
+EOF
