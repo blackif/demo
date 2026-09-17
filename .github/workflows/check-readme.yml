@@ -89,10 +89,10 @@ jobs:
                 list_link="https://github.com/$GH_REPO/blob/main/$list_file"
                 requirements="- [$list_file]($list_link) 必须与当前实际子文件夹保持同步。"
                 if [ -n "$missing" ]; then
-                  requirements="$requirements\n- 当前实际存在但未列出的子文件夹：$missing。"
+                  requirements="${requirements}"$'\n'"- 当前实际存在但未列出的子文件夹：$missing。"
                 fi
                 if [ -n "$extra" ]; then
-                  requirements="$requirements\n- List README 中存在但当前实际不存在的子文件夹：$extra。"
+                  requirements="${requirements}"$'\n'"- List README 中存在但当前实际不存在的子文件夹：$extra。"
                 fi
 
                 issue_body=$(printf '## 任务\n更新 [%s](%s)，使其与当前实际子文件夹保持同步。\n\n## 要求\n%s\n- 按 sap/abap/documents/skill.md 和 sap/abap/documents/template/list.md 的规则维护 List README。\n- 更新后必须通过 sap/abap/documents/script/check_readme.py 自动检查。\n\n## 验收条件\n- [ ] [%s](%s) 已与实际子文件夹同步，并通过 README 自动检查。\n' "$list_file" "$list_link" "$requirements" "$list_file" "$list_link")
