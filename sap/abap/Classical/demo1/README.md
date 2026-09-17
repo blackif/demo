@@ -81,7 +81,9 @@ set Billing Date (VBRK-FKDAT)
 Billing Split
 ```
 
-目录结构：
+## 補足情報
+
+### 目录構造
 ```text
 demo1/
 ├── class/
@@ -91,14 +93,5 @@ demo1/
 │   └── ysd00XX_001_02.abap
 └── README.md
 ```
-
-## 補足情報
-
-### 消息内容
-
-| メッセージ内容 | 設定内容 |
-|---|---|
-| Billing Split | `VBRK-ZUKRI` を使用して請求分割条件を設定 |
-| Billing Date | `LIKP-PODAT` を `VBRK-FKDAT` に設定 |
 
 EOF
