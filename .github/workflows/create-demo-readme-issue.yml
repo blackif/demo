@@ -88,22 +88,11 @@ jobs:
               continue
             fi
 
-            issue_body=$(cat <<EOF
-## 任务
-为 [$demo_dir]($file_link) 创建 README 文件。
+            skill_link="https://github.com/$GH_REPO/blob/main/sap/abap/documents/skill.md"
+            template_link="https://github.com/$GH_REPO/blob/main/sap/abap/documents/template/demo.md"
+            readme_link="https://github.com/$GH_REPO/blob/main/$demo_dir/README.md"
 
-## 要求
-- 分析并理解该 Demo 的全部实际内容。
-- 阅读并理解 [sap/abap/documents/skill.md](https://github.com/$GH_REPO/blob/main/sap/abap/documents/skill.md) 中与 Demo README 创建相关的规则。
-- 使用 [sap/abap/documents/template/demo.md](https://github.com/$GH_REPO/blob/main/sap/abap/documents/template/demo.md) 规定的结构和格式创建 README。
-- README 内容必须基于该 Demo 文件夹中的实际文件和处理内容，不得凭空补充实现内容。
-- 完成后执行 README 自检，并通过 sap/abap/documents/script/check_readme.py 的自动检查。
-- README 创建完成后，本 Issue 的验收条件复选框应标记为完成，并按 Skill 规则处理 Issue 标签。
-
-## 验收条件
-- [ ] 成功创建 [$demo_dir/README.md](https://github.com/$GH_REPO/blob/main/$demo_dir/README.md)。
-EOF
-)
+            issue_body=$(printf '## 任务\n为 [%s](%s) 创建 README 文件。\n\n## 要求\n- 分析并理解该 Demo 的全部实际内容。\n- 阅读并理解 [sap/abap/documents/skill.md](%s) 中与 Demo README 创建相关的规则。\n- 使用 [sap/abap/documents/template/demo.md](%s) 规定的结构和格式创建 README。\n- README 内容必须基于该 Demo 文件夹中的实际文件和处理内容，不得凭空补充实现内容。\n- 完成后执行 README 自检，并通过 sap/abap/documents/script/check_readme.py 的自动检查。\n- README 创建完成后，本 Issue 的验收条件复选框应标记为完成，并按 Skill 规则处理 Issue 标签。\n\n## 验收条件\n- [ ] 成功创建 [%s/README.md](%s)。\n' "$demo_dir" "$file_link" "$skill_link" "$template_link" "$demo_dir" "$readme_link")
 
             echo "Creating Issue for $demo_dir"
             gh issue create \
