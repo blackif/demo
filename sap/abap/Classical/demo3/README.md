@@ -1,5 +1,5 @@
 # SAP 拡張 Demo3 - Payment Clearing Enhancement
-
+ 
 这是一个 **SAP 拡張** 的 ABAP 开发示例，以 FI 收款/银行付款清账处理为主题，展示如何通过经典 ABAP Exit Include 调用自定义 Class，并结合 CDS View Entity 读取银行手续费配置数据。
 
 ## 1. Demo Overview
