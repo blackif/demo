@@ -84,11 +84,18 @@ flowchart TD
 
 ## 補足情報
 
-### 消息内容
-
-| メッセージ内容 | 設定内容 |
-|---|---|
-| Table Definition | `yxacmn0001_001` の Delivery / Maintenance 設定を使用 |
-| CDS Reference | `YC_XA_TVARVC` から Table Data を参照 |
+### 目录構造
+```text
+demo2/
+├── README.md
+├── cds/
+│   └── YC_XA_TVARVC.ddls
+└── database table/
+    ├── json/
+    │   ├── data_elements.json
+    │   ├── database_table.json
+    │   └── domains.json
+    └── table.ddl
+```
 
 EOF
