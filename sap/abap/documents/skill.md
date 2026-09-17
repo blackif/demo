@@ -212,6 +212,70 @@ When creating an Issue:
 7. Perform the Issue Self-Check.
 8. Create the GitHub Issue.
 
+### Demo Folder Issue Flow
+
+When a new fourth-level Demo folder is created under `sap/abap/`, for example `sap/abap/Classical/demo4/` or `sap/abap/rap/demo5/`, GitHub Actions creates one README task Issue automatically.
+
+The generated Issue must:
+
+1. Use `sap/abap/documents/template/issue.md`.
+2. Contain exactly the three sections `任务`, `要求`, and `验收条件`.
+3. Have exactly one `验收条件` checklist item: successful creation of the Demo's `README.md` with a repository hyperlink.
+4. Require the AI to analyze and understand the entire Demo directory.
+5. Require the AI to read and follow `sap/abap/documents/skill.md` and `sap/abap/documents/template/demo.md`.
+6. Require the README to describe the actual Demo implementation and pass `sap/abap/documents/script/check_readme.py`.
+7. Add the `review` label to the Issue.
+
+GitHub Actions must not create a README file automatically. Its responsibility at Demo creation time is only to create the README task Issue and add the `review` label. The actual README creation is controlled by this Skill and the Issue label gate below.
+
+### Todo Label Gate for README Creation
+
+For a Demo README Issue, **AI must not create or modify the Demo `README.md` unless the specified Issue currently has the `Todo` label**.
+
+The presence of the `review` label alone is not permission to create the README. The `Todo` label is the explicit execution gate.
+
+Before starting README creation, AI must:
+
+1. Identify the exact Issue assigned to the Demo.
+2. Read the current Issue labels.
+3. Confirm that `Todo` is present.
+4. If `Todo` is absent, stop without creating or modifying the Demo README and inform the user that the Issue is not ready for AI execution.
+5. If `Todo` is present, analyze the Demo files, read the Skill and Demo template, create the README, perform the required self-check, and run the automated validation.
+
+After the README has been successfully created and validated:
+
+1. Mark the single README `验收条件` checkbox as `[x]`.
+2. Remove the `Todo` label from the Issue.
+3. Keep the `review` label on the Issue.
+4. Do not remove unrelated labels unless the Issue explicitly requires it.
+5. Do not add a new status field to represent completion.
+
+If README validation fails, do not mark the checkbox as complete and do not remove `Todo`. Correct the README and repeat the self-check and validation while the `Todo` gate remains present.
+
+This label transition is intentional:
+
+```text
+New Demo folder
+      ↓
+GitHub Action creates README Issue
+      ↓
+review label
+      ↓
+Human reviews / understands the Issue
+      ↓
+Todo label added
+      ↓
+AI is allowed to create README
+      ↓
+README self-check + automated validation
+      ↓
+Success
+      ↓
+[x] 验收条件
+Todo removed
+review retained
+```
+
 ### Issue Completion
 
 An Issue is complete when all `验收条件` have been satisfied and the Human closes the GitHub Issue.
@@ -264,3 +328,6 @@ Validation passed?
 10. GitHub Actions should run the README checker only when a changed file is `README.md`.
 11. Issue content must follow `sap/abap/documents/template/issue.md` and must not introduce unapproved sections or status fields.
 12. The set and order of `##`/`### ` headings in a Demo README must exactly match the template — no heading may be added or removed. Free elaboration of content within existing sections is allowed.
+13. A newly created fourth-level Demo folder must receive a README task Issue automatically; the Action must not create the README itself.
+14. A Demo README may only be created or modified when the corresponding Issue has the `Todo` label.
+15. After successful README creation and validation, the Issue must have its single checklist item marked `[x]`, `Todo` removed, and `review` retained.
