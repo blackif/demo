@@ -81,25 +81,15 @@ OData V4 Response
 - `I_Batch` 获取 Supplier Batch，并根据 Plant 判断使用 Plant Batch 或通用 Batch 数据。
 - Consumption View 返回生产订单、Material、Batch、数量、生产工序、库存地点和 Supplier Batch。
 
-### 目录结构
-```text
-demo2/
-├── Service Bindings
-├── Service Definitions
-├── cds/
-│   ├── ZC_PP_MOrderComponent.cds
-│   └── ZI_PP_MOrderComponent.cds
-└── README.md
-```
-
 ## 補足情報
 
-### 消息内容
-
-| メッセージ内容 | 設定内容 |
-|---|---|
-| Product Name | `I_ProductText` から取得 |
-| Supplier Batch | `I_Batch` から取得 |
-| OData V4 Response | Consumption View の最終結果を返却 |
+### 目录構造
+```text
+demo2/
+├── README.md
+└── cds/
+    ├── ZC_PP_MOrderComponent.cds
+    └── ZI_PP_MOrderComponent.cds
+```
 
 EOF
