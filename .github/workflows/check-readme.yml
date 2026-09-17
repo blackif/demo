@@ -81,8 +81,8 @@ jobs:
                   --jq '.body')
 
                 issue_body=$(printf '%s\n' "$issue_body" | \
-                  sed -E 's/^- \[ \] 修正 `([^`]+)` 中导致检查失败的内容。$/- [x] 修正 `\1` 中导致检查失败的内容./' | \
-                  sed -E 's/^- \[ \] (.*) 通过 `sap\/abap\/documents\/script\/check_readme\.py` 检查。$/- [x] \1 通过 `sap\/abap\/documents\/script\/check_readme.py` 检查./')
+                  sed -E 's#^- \[ \] 修正 `([^`]+)` 中导致检查失败的内容。$#- [x] 修正 [`\1`](https://github.com/'"$GH_REPO"'/blob/main/\1) 中导致检查失败的内容。#' | \
+                  sed -E 's#^- \[ \] (.*) 通过 `sap\/abap\/documents\/script\/check_readme\.py` 检查。$#- [x] \1 通过 `sap/abap/documents/script/check_readme.py` 检查。#')
 
                 gh issue edit "$existing_issue" \
                   --repo "$GH_REPO" \
@@ -108,7 +108,8 @@ jobs:
               errors="- ❌ FAIL: README 验证失败，请查看完整日志。"
             fi
 
-            issue_body=$(printf '## 任务\n修正 `%s` 的 README 格式，使其通过 README 自动检查。\n\n## 要求\n### 自动检查失败信息：\n\n%s\n\n## 验收条件\n- [ ] 修正 `%s` 中导致检查失败的内容。\n- [ ] `%s` 通过 `sap/abap/documents/script/check_readme.py` 检查。\n' "$file" "$errors" "$file" "$file")
+            file_link="https://github.com/$GH_REPO/blob/main/$file"
+            issue_body=$(printf '## 任务\n修正 [%s](%s) 的 README 格式，使其通过 README 自动检查。\n\n## 要求\n### 自动检查失败信息：\n\n%s\n\n## 验收条件\n- [ ] 修正 [%s](%s) 中导致检查失败的内容。\n- [ ] [%s](%s) 通过 `sap/abap/documents/script/check_readme.py` 检查。\n' "$file" "$file_link" "$errors" "$file" "$file_link" "$file" "$file_link")
 
             if [ -n "$existing_issue" ]; then
               echo "Updating existing Issue #$existing_issue"
