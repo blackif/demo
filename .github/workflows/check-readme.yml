@@ -81,7 +81,7 @@ jobs:
                   --jq '.body')
 
                 issue_body=$(printf '%s\n' "$issue_body" | \
-                  sed -E 's#^- \[ \] 修正 `([^`]+)` 中导致检查失败的内容。$#- [x] 修正 [`\1`](https://github.com/'"$GH_REPO"'/blob/main/\1) 中导致检查失败的内容。#' | \
+                  sed -E 's#^- \[ \] 修正 (.*) 中导致检查失败的内容。$#- [x] 修正 \1 中导致检查失败的内容。#' | \
                   sed -E 's#^- \[ \] (.*) 通过 `sap\/abap\/documents\/script\/check_readme\.py` 检查。$#- [x] \1 通过 `sap/abap/documents/script/check_readme.py` 检查。#')
 
                 gh issue edit "$existing_issue" \
