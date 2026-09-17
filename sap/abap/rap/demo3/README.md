@@ -2,7 +2,7 @@
 
 ## 処理概要
 1. `YI_PP_MOrderOperation` をコンポジットビューとして定義し、`I_ManufacturingOrder` と `I_ManufacturingOrderOperation` を製造指図番号で結合する。
-2. `YI_PP_MOrderOperation` で `I_WorkCenter` を結合し、`I_WorkCenterText` を言語 `J` の条件で関連付けて、製造指図工程とワークセンタ情報を取得する。
+2. `YI_PP_MOrderOperation` で `I_WorkCenter` を結合し、`I_WorkCenterText` を言語 `J` の条件で関連付けて、製造指図工程およびワークセンタ情報を取得する。
 3. `YC_PP_MOrderOperation` で `YI_PP_MOrderOperation` の項目を公開し、変更日が存在しない場合は作成日時、存在する場合は変更日時から `LastChangeTimestamp` を算出する。
 
 ## 前提/制約条件
