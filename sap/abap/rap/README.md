@@ -6,3 +6,4 @@
 - [Demo4](./demo4/) — Single Level BOM CDS View
 - [Demo5](./demo5/) — Supply Demand RAP Custom Entity
 - [Demo6](./demo6/) — Payment Notification Data CDS View
+- [Demo7](./demo7/) — Product Cost By Order and Item CDS View
